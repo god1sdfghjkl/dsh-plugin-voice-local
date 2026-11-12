@@ -1,0 +1,40 @@
+# 依赖与构建产物
+node_modules/
+*.tgz
+*.log
+
+# 本地模型（体积大、许可各异，另行下载，绝不入仓）
+/models/
+/onnx_out/
+*.onnx
+*.bin
+*.safetensors
+
+# 运行时数据
+.voice-local/
+voice-local-data/
+*.part
+
+# 环境与密钥（任何情况下都不要提交）
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+**/DEEPSEEK_API_KEY*
+
+# 设计与调试中间产物
+_patch/
+*.tmp
+*.bak
+overlay-preview-mobile-debug.png
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 测试产物
+test/host-smoke.log
+test/host-smoke.log.err

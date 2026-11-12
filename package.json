@@ -1,0 +1,80 @@
+{
+  "name": "dsh-plugin-voice-local",
+  "version": "0.8.0",
+  "description": "Local full-duplex voice for DeepSeek Harness: resident ONNX TTS + sherpa-onnx ASR inside the host (worker_threads), taps llm/stream to read replies aloud, exposes loopback-only routes and an SSE channel. No Python process, no extra ports, no cloud speech APIs.",
+  "author": "god1sdfghjkl",
+  "homepage": "https://github.com/god1sdfghjkl/dsh-plugin-voice-local#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/god1sdfghjkl/dsh-plugin-voice-local.git"
+  },
+  "bugs": {
+    "url": "https://github.com/god1sdfghjkl/dsh-plugin-voice-local/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "locale",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md",
+    "README.en.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "CHANGELOG.md"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "dsh": ">=0.2.0 <0.3.0-0"
+  },
+  "scripts": {
+    "test": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/client-smoke.mjs && node test/asr-smoke.mjs && node test/host-smoke.mjs",
+    "test:ci": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/client-smoke.mjs",
+    "test:parity": "node test/parity.mjs",
+    "test:models": "node test/models-smoke.mjs",
+    "test:download": "node test/downloader-smoke.mjs",
+    "test:client": "node test/client-smoke.mjs",
+    "test:asr": "node test/asr-smoke.mjs",
+    "test:host": "node test/host-smoke.mjs",
+    "models:manifest": "node scripts/model-manifest.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "voice",
+    "tts",
+    "asr",
+    "barge-in",
+    "local",
+    "on-device"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  },
+  "dependencies": {
+    "@node-rs/jieba": "^2.0.4",
+    "onnxruntime-node": "1.31.1",
+    "sherpa-onnx": "^2.0.1"
+  }
+}

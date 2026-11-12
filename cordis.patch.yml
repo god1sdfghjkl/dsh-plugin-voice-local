@@ -1,0 +1,43 @@
+# voice-local bundle：把语音能力挂进 DSH 宿主（worker_threads 内推理，无独立进程）。
+#
+# TTS 模型可随便换：把模型目录丢进 <dataRoot>/models/tts/<id>/ 即可，
+# 插件自动探测；也可在 config 里用 ttsModel 指定 id、ttsOnnx 指向旧的单文件。
+# 模型不随包分发，默认 dataRoot = $DSH_HOME/voice-local。
+- insert:
+    - id: voice-local
+      name: 'dsh-plugin-voice-local'
+      config:
+        basePath: '/voice-local'
+        dataRoot: ''
+        # 新方式：模型目录 = dataRoot/models/tts/<id>/（含 model.json 或 model.onnx）
+        ttsModelsDir: ''
+        # 指定默认模型 id（留空 = 优先旧 ttsOnnx，否则取 models/tts 里第一个可用）
+        ttsModel: ''
+        # 旧方式（兼容）：直接指 .onnx；留空 = 自动探测 dataRoot/tts/*.onnx
+        ttsOnnx: ''
+        # 旧方式配套的 config.json（vits2 导出用，提供 sampling_rate/n_speakers）
+        ttsConfig: ''
+        # ASR 模型目录 = dataRoot/models/asr/{streaming,final}/<id>/
+        asrModelsDir: ''
+        asrModel: ''             # 指定默认流式 ASR 模型 id（留空 = 第一个可用/旧 asrStreamDir）
+        asrFinalModel: ''        # 指定默认定稿 ASR 模型 id（留空 = 第一个可用/旧 sensevoiceDir）
+        # 旧方式（兼容）：流式模型目录 / SenseVoice 目录
+        asrStreamDir: ''
+        sensevoiceDir: ''
+        sr: 44100                # 旧 ttsOnnx 方式的兜底采样率（有 config.json 时以它为准）
+        ttsThreads: 4
+        asrThreads: 1            # sherpa WASM 只支持单线程
+        autoStart: true          # 插件加载即预热模型
+        llmTap: true             # tap llm/stream，把回复切句朗读
+        firstSegmentChars: 6     # 首句短，降低首包延迟
+        maxSegmentChars: 16
+        speed: 1
+        # 浏览器端 VAD / 打断（下发到客户端，避免硬编码）
+        vadThreshold: 0.012      # 16k RMS 语音门限
+        autoEndSilenceMs: 900    # 说完停顿多久自动提交
+        minSpeechMs: 200
+        maxUtteranceMs: 30000
+        bargeIn: true            # 朗读期间允许开口打断
+        bargeInThreshold: 0.025  # 打断门限（高于 VAD，抗回采）
+        maxBodyBytes: 2097152
+        sseHeartbeatMs: 15000
