@@ -46,7 +46,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.0.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.1.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -201,4 +201,4 @@ node docs/preview/preview-overlay.mjs     # http://127.0.0.1:57999
 
 ## 版本
 
-当前 `0.8.0`：顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器 + 手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.8.1`：顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器 + 手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
