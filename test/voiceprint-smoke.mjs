@@ -5,12 +5,12 @@
  *
  * 需要 3D-Speaker CAM++ 模型；没有则跳过（CI 不会失败）。
  */
-import { mkdtempSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, rmSync, existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir, homedir } from 'node:os'
 import { readWave } from 'sherpa-onnx'
 import { extractFbank } from '../lib/voiceprint/fbank.js'
-import { VoiceprintService, sliderToThreshold, MAX_PROFILES } from '../lib/voiceprint/service.js'
+import { VoiceprintService, sliderToThreshold, MAX_PROFILES, downloadVoiceprintModel, VOICEPRINT_MODEL_SOURCES } from '../lib/voiceprint/service.js'
 import { readOnnxMetadata } from '../lib/voiceprint/embedding.js'
 
 const ROOT = process.env.VOICE_SAMPLE_ROOT || join(import.meta.dirname, '..', '..')
@@ -119,6 +119,31 @@ try {
   let overflow = ''
   try { await vp.enroll({ nickname: '第六组', clips: [other] }) } catch (e) { overflow = e.message }
   ok(/最多/.test(overflow), '超过上限报错', overflow)
+
+  console.log('== 4. 模型下载双来源回退 ==')
+  {
+    const data = readFileSync(MODEL)
+    const calls = []
+    const fakeFetch = async (url) => {
+      calls.push(url)
+      if (calls.length === 1) return { ok: false, status: 502, headers: { get: () => null } }
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => String(data.length) },
+        body: (async function* () {
+          const step = 1 << 20
+          for (let i = 0; i < data.length; i += step) yield data.subarray(i, i + step)
+        })(),
+      }
+    }
+    const target = join(dir, 'mirror.onnx')
+    const r = await downloadVoiceprintModel(target, { fetchImpl: fakeFetch })
+    ok(calls.length === 2, '首个来源失败后尝试镜像', calls.length)
+    ok(r.source === VOICEPRINT_MODEL_SOURCES[1], '实际使用镜像来源', r.source)
+    ok(existsSync(target) && statSync(target).size === data.length, '镜像文件大小一致', statSync(target).size)
+    ok(!existsSync(target + '.part'), '下载成功不留 .part')
+  }
 
   const vp2 = new VoiceprintService({ modelPath: MODEL, dataFile: join(dir, 'voiceprint.json'), threshold: 0.7 })
   ok(vp2.status().profiles.length === MAX_PROFILES, '重启后档案恢复')
