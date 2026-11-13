@@ -109,7 +109,7 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 
 模型权重许可与代码 MIT **分开**。MeloTTS 为 MIT；SenseVoice 权重为 FunASR Model License 1.1；sherpa-onnx 官方模型多为 Apache-2.0；示例音色 tl196m 为 CC BY-NC-SA 4.0。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 [docs/models.md](docs/models.md)。**重新分发前请自行核对许可与署名要求。**
 
-仓库 [`examples/models/`](examples/models/) 提供两个可直接下载的示例清单：MeloTTS 中文（MIT）与 tl196m（作者自训，CC BY-NC-SA 4.0）。
+仓库 [`examples/models/`](examples/models/) 提供两个可直接下载的示例清单：MeloTTS 中文（MIT）与 tl196m（作者自训，CC BY-NC-SA 4.0）。权重发布在 [Releases · models-v1](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/tag/models-v1)。
 
 ## 配置（`cordis.patch.yml` 的 `config`）
 
