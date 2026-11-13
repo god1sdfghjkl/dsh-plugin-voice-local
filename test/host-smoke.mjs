@@ -99,6 +99,7 @@ async function main() {
   const { ctx, state } = makeCtx()
   const dispose = apply(ctx, {
     autoStart: true,
+    autoDownloadModels: false,
     llmTap: true,
     ttsOnnx: cfgPaths.ttsOnnx,
     asrStreamDir: cfgPaths.asrStreamDir,
@@ -216,7 +217,7 @@ async function main() {
 
   console.log('== 6. 安全：非回环/跨源 ==')
   const { ctx: ctx2, state: state2 } = makeCtx()
-  apply(ctx2, { autoStart: false, llmTap: false, ttsOnnx: cfgPaths.ttsOnnx })
+  apply(ctx2, { autoStart: false, autoDownloadModels: false, llmTap: false, ttsOnnx: cfgPaths.ttsOnnx })
   const route2 = state2.routes.find((r) => r.path === '/voice-local/status')
   const resBad = new FakeRes()
   const reqBad = fakeReq('GET', { headers: { origin: 'https://evil.example' } })

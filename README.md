@@ -33,7 +33,8 @@
 ## 快速开始
 
 1. 安装插件（见下一节），刷新 DSH 页面，输入框右侧出现 🎙。
-2. 准备模型：把模型目录放到 `$DSH_HOME/voice-local/models/` 下（结构见[模型](#模型)），或在通话界面的「模型」下拉里点缺模型的条目直接下载。
+2. 模型：**首次启动会自动下载包内示例音色 `tl196m`**（约 161MB，分段 + SHA256 校验，可在配置里关掉）；
+   也可以把模型目录放到 `$DSH_HOME/voice-local/models/` 下（结构见[模型](#模型)），或在模型下拉里选其它条目。
 3. 点 🎙 → 说话。首次会请求麦克风权限。
 
 > 只配 ASR 也能用：插件会退化为「语音输入」，不朗读回复；只配 TTS 则用于手动朗读测试。
@@ -46,7 +47,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.4.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.5.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -109,7 +110,7 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 
 模型权重许可与代码 MIT **分开**。MeloTTS 为 MIT；SenseVoice 权重为 FunASR Model License 1.1；sherpa-onnx 官方模型多为 Apache-2.0；示例音色 tl196m 为 CC BY-NC-SA 4.0。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 [docs/models.md](docs/models.md)。**重新分发前请自行核对许可与署名要求。**
 
-仓库 [`examples/models/`](examples/models/) 提供两个可直接下载的示例清单：MeloTTS 中文（MIT）与 tl196m（作者自训，CC BY-NC-SA 4.0）。权重发布在 [Releases · models-v1](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/tag/models-v1)。
+仓库 [`examples/models/`](examples/models/) 内置了示例音色 tl196m 的下载清单（作者自训，CC BY-NC-SA 4.0）；首次启动会自动下载，权重发布在 [Releases · models-v1](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/tag/models-v1)。
 
 ## 配置（`cordis.patch.yml` 的 `config`）
 
@@ -126,6 +127,8 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | `sr` | `44100` | 旧 `ttsOnnx` 方式的兜底采样率 |
 | `ttsThreads` / `asrThreads` | `4` / `1` | 推理线程数 |
 | `autoStart` | `true` | 插件加载即预热模型 |
+| `autoDownloadModels` | `true` | 首次启动且没有可用 TTS 时，自动下载示例模型（`examples/models/`） |
+| `exampleModelId` | `tl196m` | 自动下载的示例模型 id |
 | `llmTap` | `true` | tap `llm/stream` 自动朗读 |
 | `firstSegmentChars` / `maxSegmentChars` | `6` / `16` | 首句 / 后续句长度 |
 | `speed` | `1` | 语速倍率 |
@@ -210,4 +213,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.8.4`：顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.8.5`：顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

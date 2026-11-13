@@ -15,6 +15,7 @@ import {
   legacyTtsProfile,
   publicTtsProfile,
 } from '../lib/models/tts-registry.js'
+import { loadExampleTtsProfiles } from '../lib/models/examples.js'
 import {
   detectAsrFiles,
   normalizeAsrProfile,
@@ -218,6 +219,34 @@ try {
     touch(join(noModel, 'tokens.txt'))
     const fp = normalizeAsrProfile({ role: 'final', type: 'sense_voice' }, noModel, 'final')
     ok(fp.problems.length > 0, 'legacy 定稿缺 model 会提示', fp.problems)
+  }
+console.log('== 14. 内置示例清单 → 虚拟可下载 profile ==')
+  {
+    const examplesDir = join(root, 'examples')
+    const targetModels = join(root, 'models-example')
+    const exDir = join(examplesDir, 'demo-voice')
+    mkdirSync(exDir, { recursive: true })
+    writeFileSync(join(exDir, 'model.json'), JSON.stringify({
+      id: 'demo-voice',
+      name: '示例音色',
+      engine: 'vits2-onnx',
+      textFrontend: 'vits2-zh',
+      files: { model: 'model.onnx', config: 'config.json' },
+      download: [
+        { path: 'model.onnx', sha256: 'a'.repeat(64), bytes: 1024, parts: [{ url: 'https://example.invalid/p0', sha256: 'b'.repeat(64), bytes: 1024 }] },
+        { url: 'https://example.invalid/config.json', path: 'config.json', bytes: 12 },
+      ],
+    }))
+    const before = loadExampleTtsProfiles({ examplesDir, modelsDir: targetModels })
+    ok(before.length === 1 && before[0].id === 'demo-voice' && before[0].example === true, '加载示例 profile')
+    ok(before[0].dir === join(targetModels, 'demo-voice'), '目标目录指向 modelsDir/<id>', before[0].dir)
+    ok(before[0].download.length === 2 && before[0].problems.length > 0, '未下载时 problems 非空且带 download')
+    // 把文件放进去后再归一化 → 视为可用
+    mkdirSync(before[0].dir, { recursive: true })
+    touch(join(before[0].dir, 'model.onnx'))
+    touch(join(before[0].dir, 'config.json'))
+    const after = loadExampleTtsProfiles({ examplesDir, modelsDir: targetModels })
+    ok(after[0].problems.length === 0, '文件齐了 problems 为空', after[0].problems)
   }
 } finally {
   rmSync(root, { recursive: true, force: true })

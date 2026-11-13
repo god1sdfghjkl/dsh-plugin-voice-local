@@ -77,7 +77,18 @@
 }
 ```
 
-## 3. 模型下载器
+## 3. 内置示例与自动下载
+
+包内 `examples/models/<id>/model.json` 是一份**只含元数据的清单**（不含权重）。插件启动时把它作为
+「虚拟可下载模型」列进 `/models`；若当前没有任何可用 TTS，且 `autoDownloadModels` 为 `true`（默认），
+宿主会在后台自动下载该示例（默认 `exampleModelId: 'tl196m'`），进度经 SSE 的 `model` 事件推送，
+完成后自动热切换为当前 TTS。
+
+- 关闭自动下载：配置 `autoDownloadModels: false`，只在模型下拉里手动点。
+- 换示例：仓库放 `examples/models/<id>/model.json`，并用 `exampleModelId` 指定。
+- 自动下载同样走下载器（分段、SHA256、`.part` 原子落盘），失败只记录日志并广播 `error`，不影响 ASR。
+
+## 4. 模型下载器
 
 - 入口：`POST /voice-local/models/fetch`，body `{kind:'tts'|'asr', id, role?}`。
 - 服务端按 `download` 清单逐文件下载：先写 `<file>.part`，校验 `sha256`（若提供）后原子改名；

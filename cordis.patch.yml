@@ -28,6 +28,8 @@
         ttsThreads: 4
         asrThreads: 1            # sherpa WASM 只支持单线程
         autoStart: true          # 插件加载即预热模型
+        autoDownloadModels: true # 首次启动且没有可用 TTS 时，自动下载包内示例模型（tl196m，分段+校验）
+        exampleModelId: 'tl196m' # 自动下载的示例模型 id（examples/models/<id>/model.json）
         llmTap: true             # tap llm/stream，把回复切句朗读
         firstSegmentChars: 6     # 首句短，降低首包延迟
         maxSegmentChars: 16
