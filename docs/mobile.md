@@ -1,6 +1,13 @@
-# 手机端与 dsh-go 适配
+# 手机端与 dshgo / dsh-go 适配
 
 桌面 DSH 里插件已经跑通。本文记录「尽量电脑手机都能用」的三条路径、当前实现与下一步。
+
+> **0.9.8 已加 dsh-go 原生适配**：`dshGo` 清单 + 长按回复「朗读」，不依赖 WebView 麦克风；
+> ASR 用 dsh-go 官方本地 SenseVoice。细节见 [dshgo-native-adapter.md](dshgo-native-adapter.md)。
+>
+> **先看 [dshgo.md](dshgo.md)**：`xiazhi88/dshgo` 是「Android App（WebView）+ 局域网反代插件」，
+> 它的 App 主动拒绝网页麦克风，本插件已做「手机朗读模式」降级；本文下半部分讲的是另一个项目
+> `ccch1mneyyy/dsh-go`（Flutter / 原生插件体系）。
 
 ## 现状
 

@@ -15,6 +15,7 @@
 ## 功能
 
 - **全屏通话界面**：说话 → 停顿约 0.9s 自动发送 → 回复流式字幕 + 语音朗读 → 开口可打断。
+- **通话口吻**：通话期间自动注入“像正常人说话”的固定规则（口语、短句、不列清单、不输出 Markdown/括号动作/AI 套话），挂断后恢复默认书面风格；配置 `callPersona: false` 可关闭。
 - **7 套背景主题**：暗色 4 套（夜色苔绿 / 深夜靛蓝 / 暗夜梅紫 / 暖夜琥珀）+ 亮色 3 套（晨光纸白 / 暖沙米色 / 静谧天蓝）。选择立即生效并记忆；下拉框、字幕、球体配色一起切换。
 - **可换模型**：TTS / ASR 都是模型注册表——往目录里丢模型即可出现，支持热切换，不重启宿主。
 - **模型下载器**：`model.json` 声明下载清单，界面内显示进度；断点 `.part` + SHA256 校验；失败可重试。
@@ -51,7 +52,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.4.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.8.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -164,7 +165,7 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 - 模型：3D-Speaker **CAM++**（中文 16k，Apache-2.0，约 28MB），首次点下载才拉取，不随包分发。
   下载先走上游 sherpa-onnx Release，失败/校验不通过自动回退到[本项目镜像](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/tag/voiceprint-v1)，两者 SHA256 一致。
 - 前端：Kaldi 兼容 80 维 fbank（纯 JS 实现，无需 Python），ORT 推理 192 维 embedding，余弦比对。
-- 录入：每次随机抽 3 句提示语（服务端不校验朗读内容，靠随机挑战提高录音回放成本），取 3 段 embedding 平均；每句手动点「停止并保存」，单句最长 15 秒；环境噪音过大或三段差异过大时要求重录。
+- 录入：每次随机抽 3 句提示语（服务端不校验朗读内容，靠随机挑战提高录音回放成本），每句手动点「停止并保存」，3 段各存一份模板、比对取最高相似度，单句最长 15 秒；环境噪音过大或三段差异过大时要求重录。
 - 多档案：最多 5 组（主人/爸爸/奶奶…），每组有昵称、语气、高权限标记；`voiceprint.json` 存每组 embedding。
 - 隐私：音频不落盘、不上传；`voiceprint.json` 只存归一化 embedding，可随时删除单组或清空。
 - 局限：注册 3 句即可用，但嘈杂环境/感冒变声会降分；不同 TTS 合成音色之间相似度偏高，阈值不建议低于 0.65。当前「语气/高权限」只保存为档案元数据，供后续逻辑使用，尚未强制拦截指令。
@@ -201,11 +202,12 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 - **client 半**（`lib/client.js`）：DSH 客户端 bundle（`window.__ModuleLoader__` + `slots`），输入框语音条 + 全屏覆盖层；AudioWorklet 16k 重采样 + VAD → `/asr/feed`；TTS PCM16 经 SSE 播放。
 - **安全**：回环地址 + Origin 校验 + 请求体大小限制；模型下载校验 SHA256；不写系统目录。
 
-## 手机 / dsh-go
+## 手机 / dshgo / dsh-go
 
 - 浏览器/手机端**现在就能用**：`client.js` 已做响应式（安全区、≥44px 触控、窄屏顶栏、矮窗横屏）。
 - 手机浏览器访问需要 **HTTPS 或 localhost** 才能拿到麦克风；局域网 `http://192.168.x.x` 会被 Chrome 拒绝。推荐 Tailscale / Caddy 反代或 `dsh web` 的本机模式。
-- 开源手机端 **dsh-go**（[ccch1mneyyy/dsh-go](https://github.com/ccch1mneyyy/dsh-go)，Flutter/Android）有三种接法：网页版/网页岛（复用现有 UI，前提是 WebView 转发麦克风权限）、独立 HTTPS PWA 旁路、原生 `dshGo` 清单轻量集成。当前 WebView 麦克风仍有上游 issue（[#60](https://github.com/ccch1mneyyy/dsh-go/issues/60)），详细对比与落地步骤见 [docs/mobile.md](docs/mobile.md)。
+- **dshgo（DSH 口袋）**：Android App + 局域网反代插件（[xiazhi88/dshgo](https://github.com/xiazhi88/dshgo)）。App 的 WebView 主动拒绝网页麦克风（`onPermissionRequest` 一律 `deny`），所以 App 内不能跑全双工；插件检测到非安全上下文会自动进入**手机朗读模式**（App 自带语音输入 + 本地 TTS 朗读回复）；窄屏右下角还有独立「语音」浮动入口，手机浏览器可书签 `/voice-local/mobile` 直达语音。想要全双工，用手机浏览器 + Tailscale HTTPS 打开 dshgo 入口，或 fork App 放行音频权限。详见 [docs/dshgo.md](docs/dshgo.md)；手机本机跑模型的可行性见 [docs/phone-local.md](docs/phone-local.md)。
+- 开源手机端 **dsh-go**（[ccch1mneyyy/dsh-go](https://github.com/ccch1mneyyy/dsh-go)）是另一套：App 内置 Linux + Node + **本机引擎**，DSH 直接跑在手机上，插件装到“本机”。本插件 0.9.8 起随包带 `dshGo` 原生清单：长按助手回复 →「朗读」，App 原生播放；ASR 用 dsh-go 官方本地 SenseVoice。这样模型在手机跑、不需要电脑；桌面/网页模式仍走原覆盖层。详见 [docs/dshgo-native-adapter.md](docs/dshgo-native-adapter.md) 与 [docs/community-phone-options.md](docs/community-phone-options.md)。
 
 ## 开发与测试
 
@@ -250,4 +252,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.9.4`：新增**声纹设置面板**（CAM++ 28MB，本地注册/余弦比对，只回答本人）；顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.8`：新增 **dsh-go 原生朗读适配**（同包 `dshGo` 清单，长按回复即读，模型在本机引擎跑）；另有声纹设置面板（CAM++ 28MB，本地注册/余弦比对，只回答本人）、顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

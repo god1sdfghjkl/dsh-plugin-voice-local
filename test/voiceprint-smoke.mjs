@@ -93,6 +93,7 @@ try {
   const r = await vp.enroll({ nickname: '主人', clips: [human0, human1] })
   ok(r.profile && r.profile.nickname === '主人', '注册档案昵称', r.profile)
   ok(r.profile.dim === 192, '注册 embedding 维度 192', r.profile.dim)
+  ok(r.profile.templates === 2, '注册保留 2 份模板（比对取最高）', r.profile.templates)
   ok(vp.enrolled === true && vp.status().profiles.length === 1, '注册后档案数 1')
   const pid = r.profile.id
 
@@ -107,9 +108,13 @@ try {
   console.log('== 3. 阈值 / 策略 / 档案管理 / 持久化 ==')
   ok(sliderToThreshold(40) === 0.7 && sliderToThreshold(100) === 1 && sliderToThreshold(0) === 0.5, '滑动条映射 40→0.70')
   vp.updateSettings({ thresholdSlider: 95 })
-  const strict = await vp.verify(human1)
+  // 用未参与注册的同一人半段音频测阈值，避免“模板本身=1.0”永远通过
+  const held = human1.slice(0, Math.floor(human1.length * 0.5))
+  const strict = await vp.verify(held)
   ok(strict.ok === false, '阈值 95 时同人也被拒（说明阈值生效）', strict)
   vp.updateSettings({ thresholdSlider: 40 })
+  const loose = await vp.verify(held)
+  ok(loose.ok === true && loose.score > 0.7, '阈值 70 时同人通过', loose)
   ok(vp.threshold === 0.7, '阈值恢复 0.70', vp.threshold)
 
   vp.updateProfile(pid, { tone: 'gentle', permissions: { highRisk: true } })
