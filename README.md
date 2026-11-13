@@ -44,6 +44,9 @@
 **方式 A：DSH 插件页（推荐）**  
 设置 → 插件 → 从本地路径 / tarball 安装 `dsh-plugin-voice-local-<version>.tgz`，确认启用后刷新页面。
 
+> npm 包发布准备中；在此之前可从 GitHub Releases 下载 tarball 安装：
+> https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases
+
 **方式 B：CLI**
 
 ```bash
