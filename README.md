@@ -6,11 +6,11 @@
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![dsh](https://img.shields.io/badge/DSH-0.2.x-4b6f44)](https://github.com/deepseek-ai)
 
-![桌面端：夜色苔绿 + 背景主题下拉](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@5212ec4/docs/images/desktop-dark.png)
+![桌面端：夜色苔绿 + 背景主题下拉](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@2a70007/docs/images/desktop-dark.png)
 
 | 亮色主题（晨光纸白） | 手机窄屏（响应式） |
 |---|---|
-| ![亮色主题](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@5212ec4/docs/images/desktop-light.png) | ![手机布局](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@5212ec4/docs/images/mobile.png) |
+| ![亮色主题](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@2a70007/docs/images/desktop-light.png) | ![手机布局](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@2a70007/docs/images/mobile.png) |
 
 ## 功能
 
@@ -155,11 +155,11 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 
 ### 声纹锁说明
 
-![声纹设置面板](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@5212ec4/docs/images/voiceprint-panel.png)
+![声纹设置面板](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@2a70007/docs/images/voiceprint-panel.png)
 
 面板里的「语气」等下拉也是自绘主题组件，深色背景不会弹纯白菜单：
 
-![主题下拉](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@5212ec4/docs/images/voiceprint-dropdown.png)
+![主题下拉](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@2a70007/docs/images/voiceprint-dropdown.png)
 
 - 模型：3D-Speaker **CAM++**（中文 16k，Apache-2.0，约 28MB），首次点下载才拉取，不随包分发。
   下载先走上游 sherpa-onnx Release，失败/校验不通过自动回退到[本项目镜像](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/tag/voiceprint-v1)，两者 SHA256 一致。

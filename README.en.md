@@ -5,7 +5,7 @@ Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streamin
 [![release](https://img.shields.io/github/v/release/god1sdfghjkl/dsh-plugin-voice-local?label=release)](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-![Desktop dark theme](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@5212ec4/docs/images/desktop-dark.png)
+![Desktop dark theme](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@2a70007/docs/images/desktop-dark.png)
 
 ## Features
 
