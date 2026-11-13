@@ -6,11 +6,11 @@
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![dsh](https://img.shields.io/badge/DSH-0.2.x-4b6f44)](https://github.com/deepseek-ai)
 
-![桌面端：夜色苔绿 + 背景主题下拉](docs/images/desktop-dark.png)
+![桌面端：夜色苔绿 + 背景主题下拉](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@947bf6a/docs/images/desktop-dark.png)
 
 | 亮色主题（晨光纸白） | 手机窄屏（响应式） |
 |---|---|
-| ![亮色主题](docs/images/desktop-light.png) | ![手机布局](docs/images/mobile.png) |
+| ![亮色主题](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@947bf6a/docs/images/desktop-light.png) | ![手机布局](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@947bf6a/docs/images/mobile.png) |
 
 ## 功能
 
@@ -51,7 +51,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.1.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.2.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -155,7 +155,7 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 
 ### 声纹锁说明
 
-![声纹设置面板](docs/images/voiceprint-panel.png)
+![声纹设置面板](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@947bf6a/docs/images/voiceprint-panel.png)
 
 - 模型：3D-Speaker **CAM++**（中文 16k，Apache-2.0，约 28MB），首次点下载才拉取，不随包分发。
 - 前端：Kaldi 兼容 80 维 fbank（纯 JS 实现，无需 Python），ORT 推理 192 维 embedding，余弦比对。
@@ -245,4 +245,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.9.1`：新增**声纹设置面板**（CAM++ 28MB，本地注册/余弦比对，只回答本人）；顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.2`：新增**声纹设置面板**（CAM++ 28MB，本地注册/余弦比对，只回答本人）；顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

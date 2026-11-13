@@ -98,10 +98,14 @@ $DSH_HOME/voice-local/
 └── voiceprint.json                      # 注册后生成的 embedding（本地）
 ```
 
-- 下载：界面「模型 → 声纹 → 下载声纹模型」，或
+- 下载：界面「声纹 → 下载声纹模型」，或
   `POST /voice-local/voiceprint/fetch`（SSE 进度）。
-- 来源：<https://github.com/k2-fsa/sherpa-onnx/releases/tag/speaker-recongition-models>
-  （`3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx`）。
+- 来源（按顺序回退）：
+  1. 上游：<https://github.com/k2-fsa/sherpa-onnx/releases/tag/speaker-recongition-models>
+     （`3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx`）。
+  2. 本项目镜像：<https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/tag/voiceprint-v1>
+     （`campplus_zh.onnx`，sha256 一致，国内访问更稳）。
+- 校验：下载后按 SHA256 `f682b514…21fd11` 校验，失败自动清理 `.part` 并尝试下一个来源。
 - 许可：3D-Speaker **Apache-2.0**；权重不随插件分发，按需下载。
 - 小体积替代：社区有 int8 版本（约 8MB），把 `voiceprintModel` 指过去即可；
   CPU 推理会慢 3–8 倍，桌面建议用 28MB fp32。

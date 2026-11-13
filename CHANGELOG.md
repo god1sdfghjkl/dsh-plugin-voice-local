@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.2 — 2026-11-13
+
+- 声纹模型下载支持**双来源回退**：先试上游 sherpa-onnx Release，失败/校验不通过自动切到本项目 `voiceprint-v1` 镜像（同 sha256），并清理 `.part`。
+- 声纹总开关**持久化**到 `voiceprint.json`，DSH 重启后保持上次状态；`voiceprintEnabled: true` 配置仍可强制开启。
+- 清理旧单档案声纹的残留代码；面板入口与模型菜单统一走 `/voiceprint/profiles`。
+- GitHub README 截图改用 jsDelivr CDN 绝对地址，避免 `raw.githubusercontent.com` 在部分网络下无法显示。
+- 新增 `voiceprint-v1` Release（CAM++ 28MB + checksums + 说明）。
+
 ## 0.9.1 — 2026-11-13
 
 - 声纹面板：模型未安装/档案已满时点「添加声纹」不再出现空白卡片，自动回到面板主页并提示。

@@ -108,6 +108,9 @@ try {
   vp.updateSettings({ requireEnrolled: false, denoise: true, wakeMode: 'direct' })
   ok(vp.status().settings.requireEnrolled === false && vp.status().settings.wakeMode === 'direct', '策略设置生效', vp.status().settings)
 
+  vp.updateSettings({ enabled: true })
+  ok(vp.status().settings.enabled === true, '总开关持久化到 settings')
+
   // 档案上限
   for (let i = vp.status().profiles.length; i < MAX_PROFILES; i++) {
     await vp.enroll({ nickname: `家人${i}`, clips: [other] })
@@ -119,6 +122,7 @@ try {
 
   const vp2 = new VoiceprintService({ modelPath: MODEL, dataFile: join(dir, 'voiceprint.json'), threshold: 0.7 })
   ok(vp2.status().profiles.length === MAX_PROFILES, '重启后档案恢复')
+  ok(vp2.status().settings.enabled === true, '重启后总开关恢复')
   const restored = await vp2.verify(human1)
   ok(restored.ok === true && restored.matched && restored.matched.nickname === '主人', '恢复后仍能匹配主人', restored)
 

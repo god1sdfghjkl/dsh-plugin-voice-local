@@ -5,7 +5,7 @@ Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streamin
 [![npm](https://img.shields.io/npm/v/dsh-plugin-voice-local)](https://www.npmjs.com/package/dsh-plugin-voice-local)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-![Desktop dark theme](docs/images/desktop-dark.png)
+![Desktop dark theme](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@947bf6a/docs/images/desktop-dark.png)
 
 ## Features
 
@@ -31,7 +31,7 @@ Install the tarball from the DSH plugin page, or download it from the
 [GitHub Releases](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases) until the npm package is out:
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.1.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.2.tgz
 ```
 
 Refresh the host page after installing because the client bundle is cached.
