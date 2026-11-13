@@ -51,7 +51,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.3.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.4.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -151,16 +151,20 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 - **背景主题**：顶栏左侧「主题」按钮（模型按钮左边），暗色/亮色分组，选择后立即切换并记住。
 - **换模型**：顶栏「模型」下拉，分组显示 TTS / 流式 ASR / 定稿 ASR；缺模型的条目会显示「可下载 xxx MB」，点一下开始下载。
 - **静音 / 打断**：底部按钮；朗读时开口也能打断。
-- **声纹设置**：顶栏「声纹」按钮（主题左边）打开设置面板：总开关、最多 5 组声纹档案（测试/重录/删除）、随机 3 句录入（防预录音频回放）、环境噪音检测、识别阈值滑杆（0–100，默认 40）、唤醒联动、身份联动（语气/高权限）。开启「仅应答已录入人员」后，陌生声音不提交给会话。
+- **声纹设置**：顶栏「声纹」按钮（主题左边）打开设置面板：总开关、最多 5 组声纹档案（测试/重录/删除）、随机 3 句录入（每句手动停止，防预录音频回放）、环境噪音检测、识别阈值滑杆（0–100，默认 40）、唤醒联动、身份联动（语气/高权限）。开启「仅应答已录入人员」后，陌生声音不提交给会话。
 
 ### 声纹锁说明
 
 ![声纹设置面板](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@5212ec4/docs/images/voiceprint-panel.png)
 
+面板里的「语气」等下拉也是自绘主题组件，深色背景不会弹纯白菜单：
+
+![主题下拉](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@5212ec4/docs/images/voiceprint-dropdown.png)
+
 - 模型：3D-Speaker **CAM++**（中文 16k，Apache-2.0，约 28MB），首次点下载才拉取，不随包分发。
   下载先走上游 sherpa-onnx Release，失败/校验不通过自动回退到[本项目镜像](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/tag/voiceprint-v1)，两者 SHA256 一致。
 - 前端：Kaldi 兼容 80 维 fbank（纯 JS 实现，无需 Python），ORT 推理 192 维 embedding，余弦比对。
-- 录入：每次随机抽 3 句提示语（服务端不校验朗读内容，靠随机挑战提高录音回放成本），取 3 段 embedding 平均；环境噪音过大时要求重录。
+- 录入：每次随机抽 3 句提示语（服务端不校验朗读内容，靠随机挑战提高录音回放成本），取 3 段 embedding 平均；每句手动点「停止并保存」，单句最长 15 秒；环境噪音过大或三段差异过大时要求重录。
 - 多档案：最多 5 组（主人/爸爸/奶奶…），每组有昵称、语气、高权限标记；`voiceprint.json` 存每组 embedding。
 - 隐私：音频不落盘、不上传；`voiceprint.json` 只存归一化 embedding，可随时删除单组或清空。
 - 局限：注册 3 句即可用，但嘈杂环境/感冒变声会降分；不同 TTS 合成音色之间相似度偏高，阈值不建议低于 0.65。当前「语气/高权限」只保存为档案元数据，供后续逻辑使用，尚未强制拦截指令。
@@ -246,4 +250,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.9.3`：新增**声纹设置面板**（CAM++ 28MB，本地注册/余弦比对，只回答本人）；顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.4`：新增**声纹设置面板**（CAM++ 28MB，本地注册/余弦比对，只回答本人）；顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import { tmpdir, homedir } from 'node:os'
 import { readWave } from 'sherpa-onnx'
 import { extractFbank } from '../lib/voiceprint/fbank.js'
-import { VoiceprintService, sliderToThreshold, MAX_PROFILES, downloadVoiceprintModel, VOICEPRINT_MODEL_SOURCES } from '../lib/voiceprint/service.js'
+import { VoiceprintService, sliderToThreshold, MAX_PROFILES, downloadVoiceprintModel, VOICEPRINT_MODEL_SOURCES, trimSilence } from '../lib/voiceprint/service.js'
 import { readOnnxMetadata } from '../lib/voiceprint/embedding.js'
 
 const ROOT = process.env.VOICE_SAMPLE_ROOT || join(import.meta.dirname, '..', '..')
@@ -58,6 +58,17 @@ console.log('== 1. fbank ==')
   ok(finite, '全部数值有限')
   const first = f.data[0]
   ok(first !== 0, '首帧非零（log mel）')
+}
+
+console.log('== 1.5 首尾静音裁剪 ==')
+{
+  const wav = load16k(A)
+  const padded = new Float32Array(wav.length + 16000)
+  padded.set(wav, 8000)
+  const trimmed = trimSilence(padded)
+  ok(trimmed.length < padded.length - 8000, '裁掉首尾静音', { before: padded.length, after: trimmed.length })
+  ok(trimmed.length > 16000 * 0.8, '保留有效语音', trimmed.length)
+  ok(trimSilence(wav).length > 16000 * 0.5, '无明显静音时保留原音频', trimSilence(wav).length)
 }
 
 console.log('== 2. 模型 metadata / 多档案注册 ==')
