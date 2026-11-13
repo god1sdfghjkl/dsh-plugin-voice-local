@@ -92,6 +92,32 @@ node scripts/model-manifest.mjs --dir path/to/model --base-url https://example.c
 # 输出可直接粘进 model.json 的 download 数组；--out 可写入文件
 ```
 
+### 大文件分段（`parts`）
+
+GitHub Release 单文件上限 2 GiB、国内长连接容易断。可以把一个文件拆成多段上传，插件下载器
+会逐段下载 + 校验、拼接后再校验整文件（>= 0.8.3）：
+
+```jsonc
+"download": [{
+  "path": "model.onnx",
+  "sha256": "<整文件 sha256>",
+  "bytes": 168994224,
+  "parts": [
+    { "url": "https://…/model.onnx.part00", "sha256": "<段 sha>", "bytes": 16777216 },
+    { "url": "https://…/model.onnx.part10", "sha256": "<段 sha>", "bytes": 1222064 }
+  ]
+}]
+```
+
+生成分段与清单：
+
+```bash
+node scripts/split-model.mjs --file model.onnx --out-dir dist/parts --chunk-mb 16 \
+  --base-url https://github.com/<owner>/<repo>/releases/download/models-v1 --out dist/parts/manifest.json
+```
+
+然后用 `gh release upload <tag> dist/parts/model.onnx.part*` 上传（可并行多个进程加速）。
+
 ## 4. 发到哪里
 
 | 方案 | 单文件上限 | 优点 | 注意 |

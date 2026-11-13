@@ -2,7 +2,9 @@
 
 作者自训 / 自用音色，已导出为 ONNX（VITS2 + 中文音素与声调前端，44.1kHz 单声道）。
 
-- 权重文件：`model.onnx`（161.3 MiB）+ `config.json`（2.7 KiB）
+- 权重文件：`model.onnx`（161.3 MiB），为便于上传/断点校验拆成 **11 个 16 MiB 分段**
+  `model.onnx.part00 … model.onnx.part10`；插件下载器（**>= 0.8.3**）会逐段校验后拼接成完整文件。
+- 配置：`config.json`（2.7 KiB）
 - 推理引擎：`vits2-onnx`（插件内置适配器，输入 `x / x_lengths / tone / sid`）
 - 采样：`sdp_ratio=0.2`、`noise_scale=0.6`、`noise_scale_w=0.8`，默认语速 1.0
 
@@ -15,8 +17,13 @@
    ```
 
 2. 打开通话界面的「模型」下拉，选中「示例音色 tl196m」；缺文件时会显示「可下载 161MB」，
-   点一下由插件下载并校验 SHA256。
-3. 或在 Release 页面手动下载 `model.onnx` / `config.json` 放进同一目录，再刷新页面。
+   点一下由插件下载（分段并行 + 逐段/整文件 SHA256 校验 + 自动拼接）。
+3. 或从 Release 手动下载全部分段与 `config.json`，按顺序拼接：
+
+   ```bash
+   cat model.onnx.part0* > model.onnx          # macOS / Linux
+   copy /b model.onnx.part00+model.onnx.part01+...+model.onnx.part10 model.onnx   # Windows
+   ```
 
 目录最终形态：
 

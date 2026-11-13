@@ -46,7 +46,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.2.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.3.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -186,6 +186,13 @@ node docs/preview/preview-overlay.mjs     # http://127.0.0.1:57999
 # ?theme=day-paper  切换主题；?menu=theme 打开主题菜单；?debug 看断点尺寸
 ```
 
+模型发布工具（零依赖）：
+
+```bash
+node scripts/model-manifest.mjs --dir <模型目录> --base-url <下载根地址>   # 生成 download 清单
+node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-url <地址> --chunk-mb 16
+```
+
 ## 常见问题
 
 - **点了 🎙 没反应 / 没声音**：先看 `/voice-local/status` 的 `lastError`；再看是否授予麦克风权限、页面是否 HTTPS/localhost。
@@ -203,4 +210,4 @@ node docs/preview/preview-overlay.mjs     # http://127.0.0.1:57999
 
 ## 版本
 
-当前 `0.8.2`：顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器 + 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.8.3`：顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（支持分段/断点校验）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

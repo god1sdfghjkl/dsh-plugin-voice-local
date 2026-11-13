@@ -122,6 +122,55 @@ try {
     download: [{ url: `${base}/tokens.txt`, path: 'tokens.txt', sha256: shaB, bytes: fileB.length }],
   })
   ok(r7.downloaded === 1 && existsSync(join(autoDir, 'tokens.txt')), '自动创建目录并下载', readdirSync(autoDir))
+
+  console.log('== 8. 分段下载 + 拼接 + 整文件校验 ==')
+  const bigA = Buffer.from('P0'.repeat(100000))
+  const bigB = Buffer.from('P1'.repeat(120000))
+  writeFileSync(join(serveDir, 'big.part0'), bigA)
+  writeFileSync(join(serveDir, 'big.part1'), bigB)
+  const combined = Buffer.concat([bigA, bigB])
+  const shaPartA = createHash('sha256').update(bigA).digest('hex')
+  const shaPartB = createHash('sha256').update(bigB).digest('hex')
+  const shaWhole = createHash('sha256').update(combined).digest('hex')
+  const partProfile = {
+    id: 'parts', dir: join(modelDir, 'parts'),
+    download: [{
+      path: 'big/model.onnx', sha256: shaWhole, bytes: combined.length,
+      parts: [
+        { url: `${base}/big.part0`, sha256: shaPartA, bytes: bigA.length },
+        { url: `${base}/big.part1`, sha256: shaPartB, bytes: bigB.length },
+      ],
+    }],
+  }
+  const summaryParts = downloadSummary(partProfile)
+  ok(summaryParts && summaryParts.missing === 1 && summaryParts.bytes === combined.length, '分段清单统计 bytes/missing', summaryParts)
+  const progressParts = []
+  const r8 = await downloadProfileFiles(partProfile, { onProgress: (p) => progressParts.push(p) })
+  const merged = join(modelDir, 'parts', 'big', 'model.onnx')
+  ok(r8.downloaded === 1, '分段下载完成', r8)
+  ok(readFileSync(merged).equals(combined), '拼接后内容正确')
+  ok((await sha256File(merged)) === shaWhole, '拼接后整文件 sha256 正确')
+  ok((await missingFiles(partProfile)).length === 0, 'missingFiles 为空')
+  ok(!existsSync(merged + '.part'), '不留整文件 .part')
+  ok(readdirSync(join(modelDir, 'parts', 'big')).filter((n) => n.indexOf('.part-') >= 0).length === 0, '不留分段临时文件')
+  ok(progressParts.some((p) => p.phase === 'part-done') && progressParts.some((p) => p.phase === 'done'), '有分段进度事件')
+
+  console.log('== 9. 分段 sha 不符 → 报错且不留残file ==')
+  const badPartProfile = {
+    id: 'parts-bad', dir: join(modelDir, 'parts-bad'),
+    download: [{
+      path: 'model.onnx', sha256: shaWhole, bytes: combined.length,
+      parts: [
+        { url: `${base}/big.part0`, sha256: shaWrong, bytes: bigA.length },
+        { url: `${base}/big.part1`, sha256: shaPartB, bytes: bigB.length },
+      ],
+    }],
+  }
+  let errParts = null
+  try { await downloadProfileFiles(badPartProfile) } catch (e) { errParts = e }
+  ok(errParts && /段校验失败/.test(errParts.message), '分段校验失败报错', errParts && errParts.message)
+  ok(!existsSync(join(modelDir, 'parts-bad', 'model.onnx')), '不留下目标文件')
+  ok(readdirSync(join(modelDir, 'parts-bad')).length === 0, '不留下任何临时文件')
 } finally {
   await new Promise((resolve) => server.close(resolve))
   rmSync(root, { recursive: true, force: true })

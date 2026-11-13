@@ -6,7 +6,9 @@
 
 | 文件 | 大小 | SHA256 |
 |---|---|---|
-| `model.onnx` | 168,994,224 B | `f6fe57cd186b7db02d154432ab6dff5d069e4cc22be30566228ac239cd6387b1` |
+| `model.onnx.part00 … part09`（共 10 段） | 16,777,216 B / 段 | 见 `checksums.txt` |
+| `model.onnx.part10` | 1,222,064 B | 见 `checksums.txt` |
+| `model.onnx`（整文件 SHA，供拼接后校验） | 168,994,224 B | `f6fe57cd186b7db02d154432ab6dff5d069e4cc22be30566228ac239cd6387b1` |
 | `config.json` | 2,784 B | `6f49b302805d4e2e86d43c72bc7393842c4a53f4550b9568190ed32051f34a38` |
 
 - 采样率：44100 Hz，单声道，16-bit PCM（插件内部转 float32）
@@ -15,9 +17,10 @@
 
 ## 安装
 
-把 `examples/models/tl196m/model.json` 复制到
-`$DSH_HOME/voice-local/models/tts/tl196m/model.json`，然后在插件的模型下拉里点下载；
-或手动把 `model.onnx`、`config.json` 放进同一目录。
+插件 **>= 0.8.3**：把 `examples/models/tl196m/model.json` 复制到
+`$DSH_HOME/voice-local/models/tts/tl196m/model.json`，在模型下拉里点下载；
+下载器会**并行拉取分段 → 逐段校验 → 拼接 → 整文件校验**。
+也可手动下载全部分段，用 `cat` / `copy /b` 拼接成 `model.onnx`，再放 `config.json`。
 
 ## 许可
 
