@@ -27,7 +27,7 @@ Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streamin
 Install the tarball from the DSH plugin page, or:
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.3.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.4.tgz
 ```
 
 Refresh the host page after installing because the client bundle is cached.
