@@ -2,7 +2,7 @@
 
 **DeepSeek Harness（DSH）本地流式语音插件**：TTS + ASR 全在宿主进程内跑，不 spawn 独立进程、不另起端口、不走云语音 API。点一下输入框的 🎙，就能在全屏通话界面里跟 DSH 说话——它边流边读，你随时开口打断。
 
-[![npm](https://img.shields.io/npm/v/dsh-plugin-voice-local)](https://www.npmjs.com/package/dsh-plugin-voice-local)
+[![release](https://img.shields.io/github/v/release/god1sdfghjkl/dsh-plugin-voice-local?label=release)](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![dsh](https://img.shields.io/badge/DSH-0.2.x-4b6f44)](https://github.com/deepseek-ai)
 

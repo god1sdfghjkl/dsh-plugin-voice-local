@@ -2,7 +2,7 @@
 
 Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streaming ASR run inside the host process (worker threads). No extra ports, no Python sidecar, no cloud speech APIs. Click the 🎙 in the composer to enter a fullscreen call UI: speak, replies stream as text and audio, and you can barge in at any time.
 
-[![npm](https://img.shields.io/npm/v/dsh-plugin-voice-local)](https://www.npmjs.com/package/dsh-plugin-voice-local)
+[![release](https://img.shields.io/github/v/release/god1sdfghjkl/dsh-plugin-voice-local?label=release)](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ![Desktop dark theme](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@947bf6a/docs/images/desktop-dark.png)
