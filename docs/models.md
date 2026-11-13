@@ -127,6 +127,7 @@ node scripts/model-manifest.mjs --dir path/to/model --base-url https://example.c
 | MeloTTS（代码 + 权重） | MIT | 可以，保留版权与许可全文 |
 | sherpa-onnx 官方模型 | Apache-2.0 | 可以，保留 NOTICE |
 | SenseVoice 权重 | FunASR Model License 1.1 | 可以，但必须署名、保留模型名 |
+| 示例音色 tl196m（自训 VITS2） | CC BY-NC-SA 4.0 | 可以，但必须署名、非商业、相同方式共享 |
 | 作者自训 tl196m | 由作者在模型仓声明 | 以模型仓 LICENSE 为准 |
 
 不确定时：只提供**下载地址**、不把权重放进本仓库，是最安全的做法。

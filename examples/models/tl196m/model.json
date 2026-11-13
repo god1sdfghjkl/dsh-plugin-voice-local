@@ -1,0 +1,32 @@
+{
+  "id": "tl196m",
+  "name": "示例音色 tl196m（VITS2 中文）",
+  "engine": "vits2-onnx",
+  "textFrontend": "vits2-zh",
+  "sampleRate": 44100,
+  "files": {
+    "model": "model.onnx",
+    "config": "config.json"
+  },
+  "sampling": {
+    "sdpRatio": 0.2,
+    "noiseScale": 0.6,
+    "noiseScaleW": 0.8,
+    "lengthScale": 1.0,
+    "speakerId": 0
+  },
+  "download": [
+    {
+      "url": "https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/download/models-v1/model.onnx",
+      "path": "model.onnx",
+      "sha256": "f6fe57cd186b7db02d154432ab6dff5d069e4cc22be30566228ac239cd6387b1",
+      "bytes": 168994224
+    },
+    {
+      "url": "https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/download/models-v1/config.json",
+      "path": "config.json",
+      "sha256": "6f49b302805d4e2e86d43c72bc7393842c4a53f4550b9568190ed32051f34a38",
+      "bytes": 2784
+    }
+  ]
+}
