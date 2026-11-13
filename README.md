@@ -158,6 +158,7 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 ![声纹设置面板](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@947bf6a/docs/images/voiceprint-panel.png)
 
 - 模型：3D-Speaker **CAM++**（中文 16k，Apache-2.0，约 28MB），首次点下载才拉取，不随包分发。
+  下载先走上游 sherpa-onnx Release，失败/校验不通过自动回退到[本项目镜像](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases/tag/voiceprint-v1)，两者 SHA256 一致。
 - 前端：Kaldi 兼容 80 维 fbank（纯 JS 实现，无需 Python），ORT 推理 192 维 embedding，余弦比对。
 - 录入：每次随机抽 3 句提示语（服务端不校验朗读内容，靠随机挑战提高录音回放成本），取 3 段 embedding 平均；环境噪音过大时要求重录。
 - 多档案：最多 5 组（主人/爸爸/奶奶…），每组有昵称、语气、高权限标记；`voiceprint.json` 存每组 embedding。
