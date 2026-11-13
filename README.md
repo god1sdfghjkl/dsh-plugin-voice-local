@@ -19,6 +19,7 @@
 - **可换模型**：TTS / ASR 都是模型注册表——往目录里丢模型即可出现，支持热切换，不重启宿主。
 - **模型下载器**：`model.json` 声明下载清单，界面内显示进度；断点 `.part` + SHA256 校验；失败可重试。
 - **本地优先**：模型、音频、文本都不出本机；路由仅回环地址可用，并做 Origin 校验。
+- **声纹锁（可选）**：注册自己的声音后，只回答你本人——别人的话照常转写显示，但不提交给会话。声纹 embedding 只存本地。
 - **输入框小语音条**：不打开全屏时也能看电平、字幕、结束/关闭；颜色跟随 DSH 主题变量。
 - **响应式**：桌面 / 窄窗 / 手机浏览器均可用；安全区、触控尺寸、横屏矮窗都有适配。
 
@@ -50,7 +51,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.5.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.0.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -139,6 +140,10 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | `autoEndSilenceMs` | `900` | 说完停顿多久自动提交 |
 | `minSpeechMs` | `200` | 至少说多久才算一句 |
 | `bargeIn` / `bargeInThreshold` | `true` / `0.025` | 朗读期间是否允许开口打断及门限 |
+| `voiceprintEnabled` | `false` | 声纹锁开关（也可在界面里切） |
+| `voiceprintThreshold` | `0.7` | 声纹余弦阈值（0~1，越大越严） |
+| `voiceprintModel` | `$dataRoot/models/voiceprint/campplus_zh.onnx` | 声纹模型路径 |
+| `voiceprintDataFile` | `$dataRoot/voiceprint.json` | 声纹 embedding 存储文件 |
 
 ## 使用
 
@@ -146,6 +151,18 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 - **背景主题**：顶栏左侧「主题」按钮（模型按钮左边），暗色/亮色分组，选择后立即切换并记住。
 - **换模型**：顶栏「模型」下拉，分组显示 TTS / 流式 ASR / 定稿 ASR；缺模型的条目会显示「可下载 xxx MB」，点一下开始下载。
 - **静音 / 打断**：底部按钮；朗读时开口也能打断。
+- **声纹设置**：顶栏「声纹」按钮（主题左边）打开设置面板：总开关、最多 5 组声纹档案（测试/重录/删除）、随机 3 句录入（防预录音频回放）、环境噪音检测、识别阈值滑杆（0–100，默认 40）、唤醒联动、身份联动（语气/高权限）。开启「仅应答已录入人员」后，陌生声音不提交给会话。
+
+### 声纹锁说明
+
+![声纹设置面板](docs/images/voiceprint-panel.png)
+
+- 模型：3D-Speaker **CAM++**（中文 16k，Apache-2.0，约 28MB），首次点下载才拉取，不随包分发。
+- 前端：Kaldi 兼容 80 维 fbank（纯 JS 实现，无需 Python），ORT 推理 192 维 embedding，余弦比对。
+- 录入：每次随机抽 3 句提示语（服务端不校验朗读内容，靠随机挑战提高录音回放成本），取 3 段 embedding 平均；环境噪音过大时要求重录。
+- 多档案：最多 5 组（主人/爸爸/奶奶…），每组有昵称、语气、高权限标记；`voiceprint.json` 存每组 embedding。
+- 隐私：音频不落盘、不上传；`voiceprint.json` 只存归一化 embedding，可随时删除单组或清空。
+- 局限：注册 3 句即可用，但嘈杂环境/感冒变声会降分；不同 TTS 合成音色之间相似度偏高，阈值不建议低于 0.65。当前「语气/高权限」只保存为档案元数据，供后续逻辑使用，尚未强制拦截指令。
 
 ## HTTP 接口（同源，仅回环）
 
@@ -159,6 +176,18 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | POST | `/voice-local/asr/start` \| `/asr/feed` \| `/asr/final` | 流式识别（PCM16LE @16k mono） |
 | POST | `/voice-local/speak` | 文本转 WAV（手动测试用） |
 | POST | `/voice-local/cancel` | 打断当前 TTS |
+| GET | `/voice-local/voiceprint/status` | 声纹状态（模型/档案/开关/阈值/策略） |
+| POST | `/voice-local/voiceprint/enable` | 开关声纹锁 `{enabled}` |
+| POST | `/voice-local/voiceprint/profiles` | 新增声纹档案 `{nickname, clips:[base64 PCM16×3], tone}` |
+| POST | `/voice-local/voiceprint/profiles/reenroll` | 重录 `{id, clips, nickname?, tone?}` |
+| POST | `/voice-local/voiceprint/profiles/update` | 改昵称/语气/权限 `{id, ...}` |
+| POST | `/voice-local/voiceprint/profiles/delete` | 删除档案 `{id}` |
+| POST | `/voice-local/voiceprint/settings` | 识别策略 `{requireEnrolled, thresholdSlider, denoise, wakeMode}` |
+| POST | `/voice-local/voiceprint/test?id=` | 用一段 PCM16/WAV 测试指定档案 |
+| POST | `/voice-local/voiceprint/enroll` | 单档案兼容接口（PCM16LE 16k 或 16k WAV） |
+| POST | `/voice-local/voiceprint/verify` | 试算相似度（同一音频格式） |
+| POST | `/voice-local/voiceprint/clear` | 清空全部声纹 |
+| POST | `/voice-local/voiceprint/fetch` | 下载声纹模型（SSE 进度） |
 | GET | `/voice-local/assets/*` | 内置字体等静态资源 |
 
 ## 架构
@@ -216,4 +245,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.8.5`：顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.0`：新增**声纹锁**（CAM++ 28MB，本地注册/余弦比对，只回答本人）；顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式；修复标题栏拖拽区吞点击。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

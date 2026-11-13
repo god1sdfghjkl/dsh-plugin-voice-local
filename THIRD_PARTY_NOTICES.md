@@ -48,6 +48,7 @@
 | sherpa-onnx 官方模型（zipformer / VITS / Kokoro 等） | Apache-2.0 | 见 https://github.com/k2-fsa/sherpa-onnx 与模型发布页 |
 | SenseVoice（`sherpa-onnx` 转换权重） | 代码 MIT；权重 FunASR Model License 1.1 | 必须署名并保留模型名，详见 https://github.com/modelscope/FunASR/blob/main/MODEL_LICENSE |
 | 示例音色 `tl196m`（VITS2-onnx，作者自训） | 见模型仓库的 LICENSE | 由作者单独发布，不随 npm 包分发 |
+| 声纹模型 3D-Speaker CAM++（`campplus_zh.onnx`） | Apache-2.0 | 首次使用声纹锁时按需下载；来源 https://github.com/modelscope/3D-Speaker 与 sherpa-onnx 发布页 |
 | VITS2 架构 | 论文公开；具体实现许可各异 | 本插件只调用 onnx 权重，不包含 VITS2 训练代码 |
 
 如果你重新分发上述模型，请自行确保遵守对应许可（尤其是 SenseVoice 的 FunASR

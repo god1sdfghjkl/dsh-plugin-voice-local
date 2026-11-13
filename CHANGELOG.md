@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.9.0 — 2026-11-13
+
+- **声纹锁（只回答我的声音）**：新增 3D-Speaker CAM++ 声纹校验（Apache-2.0，28MB，按需下载）。
+  - 顶栏新增「声纹」入口（主题按钮左边），打开设置面板：总开关、档案管理（最多 5 组）、识别策略、身份联动。
+  - 录入向导：随机 3 句提示（每次不同，防预录音频回放）+ 实时波形 + 音量/环境噪音检测；完成后填昵称。
+  - 档案卡片：昵称、录入时间、状态、测试/重录/删除；测试即时显示相似度。
+  - 识别策略：仅应答已录入人员、置信阈值滑杆（0–100，默认 40）、声纹降噪增强（采集端）、唤醒联动 A/B。
+  - 身份联动：每档案可设语气（正常/舒缓/活泼）与高权限指令标记（当前为元数据，随后续逻辑接入）。
+  - 纯 JS 实现 Kaldi 兼容 80 维 fbank（25ms/10ms、povey、preemph 0.97、80 mel），
+    用 onnxruntime-node 跑 192 维 embedding，余弦相似度 + 阈值（默认 0.70）。
+  - 定稿时门控：不匹配就不提交给会话，前端提示「不是本人的声音，已忽略」；注册音频与
+    embedding 只存本地（`$DSH_HOME/voice-local/voiceprint.json`），不落盘原始音频、不上传。
+  - 新增 HTTP：`/voiceprint/status|enable|profiles|profiles/update|profiles/reenroll|profiles/delete|settings|test|enroll|verify|clear|fetch`。
+  - 新增 `test/voiceprint-smoke.mjs`（fbank/多档案/同人通过/异人拒绝/阈值/语气/持久化/上限/删除）。
+- README 补充声纹锁说明、配置项、接口；THIRD_PARTY_NOTICES 补充 3D-Speaker 许可。
+
 ## 0.8.5 — 2026-11-13
 
 - **首次启动自动下载示例模型**：包内新增 `examples/models/<id>/model.json` 清单；没有可用 TTS 时，

@@ -15,6 +15,9 @@ Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streamin
 - In-UI model downloader with progress, resumable `.part` files and SHA256 verification.
 - Local-only: loopback + Origin checks; audio/text never leave the machine.
 - Responsive UI for desktop, narrow windows and mobile browsers (safe areas, 44px+ touch targets).
+- **Voiceprint (optional)**: CAM++ speaker verification, up to 5 profiles, 3-prompt randomized
+  enrollment, threshold slider, per-profile tone/permission metadata. Mismatched voices are not
+  submitted to the session. Embeddings stay local.
 
 ## Requirements
 
@@ -28,7 +31,7 @@ Install the tarball from the DSH plugin page, or download it from the
 [GitHub Releases](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases) until the npm package is out:
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.8.5.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.0.tgz
 ```
 
 Refresh the host page after installing because the client bundle is cached.
@@ -52,13 +55,16 @@ sherpa-onnx models Apache-2.0). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES
 - Theme picker sits to the left of the model picker; the model picker switches TTS /
   streaming ASR / final ASR and offers downloads for missing models.
 - Bottom controls: mute / hang up / interrupt; speaking while it reads also interrupts.
+- The **声纹 (Voiceprint)** chip left of the theme picker opens the settings panel: master switch,
+  profile cards, randomized 3-clip enrollment, noise rejection, threshold slider and policy options.
 
 ## Configuration
 
 All keys live under `config` in `cordis.patch.yml`: `basePath`, `dataRoot`,
 `ttsModelsDir`, `ttsModel`, `asrModelsDir`, `asrModel`, `asrFinalModel`, thread counts,
-VAD thresholds, `llmTap`, segmentation lengths and speed. See the Chinese README for the
-full table and HTTP route list.
+VAD thresholds, `llmTap`, segmentation lengths and speed, plus voiceprint keys
+(`voiceprintEnabled`, `voiceprintThreshold`, `voiceprintModel`, `voiceprintDataFile`).
+See the Chinese README for the full table and HTTP route list.
 
 ## Mobile / dsh-go
 

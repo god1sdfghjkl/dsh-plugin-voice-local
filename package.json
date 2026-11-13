@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-voice-local",
-  "version": "0.8.5",
+  "version": "0.9.0",
   "description": "Local full-duplex voice for DeepSeek Harness: resident ONNX TTS + sherpa-onnx ASR inside the host (worker_threads), taps llm/stream to read replies aloud, exposes loopback-only routes and an SSE channel. No Python process, no extra ports, no cloud speech APIs.",
   "author": "god1sdfghjkl",
   "homepage": "https://github.com/god1sdfghjkl/dsh-plugin-voice-local#readme",
@@ -43,13 +43,14 @@
     "dsh": ">=0.2.0 <0.3.0-0"
   },
   "scripts": {
-    "test": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/client-smoke.mjs && node test/asr-smoke.mjs && node test/host-smoke.mjs",
+    "test": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/voiceprint-smoke.mjs && node test/client-smoke.mjs && node test/asr-smoke.mjs && node test/host-smoke.mjs",
     "test:ci": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/client-smoke.mjs",
     "test:parity": "node test/parity.mjs",
     "test:models": "node test/models-smoke.mjs",
     "test:download": "node test/downloader-smoke.mjs",
     "test:client": "node test/client-smoke.mjs",
     "test:asr": "node test/asr-smoke.mjs",
+  "test:voiceprint": "node test/voiceprint-smoke.mjs",
     "test:host": "node test/host-smoke.mjs",
     "models:manifest": "node scripts/model-manifest.mjs"
   },

@@ -30,6 +30,10 @@
         autoStart: true          # 插件加载即预热模型
         autoDownloadModels: true # 首次启动且没有可用 TTS 时，自动下载包内示例模型（tl196m，分段+校验）
         exampleModelId: 'tl196m' # 自动下载的示例模型 id（examples/models/<id>/model.json）
+        voiceprintEnabled: false # 声纹锁：只提交注册过的声音
+        voiceprintThreshold: 0.7 # 声纹余弦阈值（0~1，越大越严）
+        voiceprintModel: ''      # 空 = $dataRoot/models/voiceprint/campplus_zh.onnx
+        voiceprintDataFile: ''   # 空 = $dataRoot/voiceprint.json
         llmTap: true             # tap llm/stream，把回复切句朗读
         firstSegmentChars: 6     # 首句短，降低首包延迟
         maxSegmentChars: 16

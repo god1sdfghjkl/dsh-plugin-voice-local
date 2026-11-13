@@ -88,7 +88,27 @@
 - 换示例：仓库放 `examples/models/<id>/model.json`，并用 `exampleModelId` 指定。
 - 自动下载同样走下载器（分段、SHA256、`.part` 原子落盘），失败只记录日志并广播 `error`，不影响 ASR。
 
-## 4. 模型下载器
+## 4. 声纹模型（CAM++）
+
+声纹锁使用的模型不属于 TTS/ASR 注册表，单独放在：
+
+```
+$DSH_HOME/voice-local/
+├── models/voiceprint/campplus_zh.onnx   # 3D-Speaker CAM++ 中文 16k，约 27MB
+└── voiceprint.json                      # 注册后生成的 embedding（本地）
+```
+
+- 下载：界面「模型 → 声纹 → 下载声纹模型」，或
+  `POST /voice-local/voiceprint/fetch`（SSE 进度）。
+- 来源：<https://github.com/k2-fsa/sherpa-onnx/releases/tag/speaker-recongition-models>
+  （`3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx`）。
+- 许可：3D-Speaker **Apache-2.0**；权重不随插件分发，按需下载。
+- 小体积替代：社区有 int8 版本（约 8MB），把 `voiceprintModel` 指过去即可；
+  CPU 推理会慢 3–8 倍，桌面建议用 28MB fp32。
+- 输入：Kaldi 兼容 80 维 fbank（16k / 25ms / 10ms / povey / preemph 0.97），
+  无需 Python；推理走 `onnxruntime-node`。
+
+## 5. 模型下载器
 
 - 入口：`POST /voice-local/models/fetch`，body `{kind:'tts'|'asr', id, role?}`。
 - 服务端按 `download` 清单逐文件下载：先写 `<file>.part`，校验 `sha256`（若提供）后原子改名；
