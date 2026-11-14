@@ -70,7 +70,7 @@ Install the tarball from the DSH plugin page, or download it from the
 [GitHub Releases](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases) until the npm package is out:
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.12.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.13.tgz
 ```
 
 Refresh the host page after installing because the client bundle is cached.
@@ -112,7 +112,9 @@ required for microphone access). The open-source Android client
 [dsh-go](https://github.com/ccch1mneyyy/dsh-go) runs DSH in its on-device Linux engine;
 starting with 0.9.8 this package also ships a native `dshGo` manifest: long-press an
 assistant reply to read it aloud through the phone's local TTS engine, while the official
-dsh-go voice input bundle provides on-device SenseVoice ASR. See
+dsh-go voice input bundle provides on-device SenseVoice ASR. 0.9.13 adds a native fixed
+entry — composer capsule “Voice”, a status strip, and a native panel (test / stop / refresh /
+status) — without loading the web UI. See
 [docs/dshgo-native-adapter.md](docs/dshgo-native-adapter.md).
 
 ## Development

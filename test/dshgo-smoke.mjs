@@ -8,6 +8,7 @@
  *   - 过期 key 报错
  */
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { pcm16ToWav } from '../lib/security.js'
 import { installDshGo, cleanForSpeech, splitForSpeech, concatWav } from '../lib/dshgo.js'
 
@@ -25,7 +26,7 @@ function check(name, fn) {
 }
 
 function fakeCtx() {
-  const reg = { read: null, media: null, capability: null }
+  const reg = { read: null, media: null, capability: null, strip: null, panel: null }
   const ctx = {
     inject(names, cb) {
       assert.deepEqual(names, ['dshGo'])
@@ -33,6 +34,8 @@ function fakeCtx() {
         dshGo: {
           on(id, fn) { reg[id] = fn },
           media(id, fn) { reg.media = fn },
+          strip(id, fn) { reg.strip = { id, fn } },
+          panel(id, spec) { reg.panel = { id, spec } },
           onCapability(fn) { reg.capability = fn },
         },
       })
@@ -46,6 +49,32 @@ const wavOf = (ms, sr = 16000) => {
   const pcm = new Int16Array(n)
   for (let i = 0; i < n; i++) pcm[i] = Math.round(Math.sin((i / sr) * 2 * Math.PI * 440) * 8000)
   return pcm16ToWav(pcm, sr)
+}
+
+console.log('== 0. 清单 ==')
+{
+  const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).dshGo
+  const c = manifest.contributes
+  const ids = [
+    ...c['composer.actions'].map((x) => x.id),
+    ...c['composer.strip'].map((x) => x.id),
+    ...c.panels.map((x) => x.id),
+    ...c['message.actions'].map((x) => x.id),
+    ...c.media.map((x) => x.id),
+  ]
+  check('原生入口/状态条/面板已声明', () => {
+    assert.equal(c['composer.actions'][0].id, 'voice-open')
+    assert.equal(c['composer.strip'][0].panel, 'voice-panel')
+    assert.equal(c.panels[0].id, 'voice-panel')
+  })
+  check('贡献 id 全局唯一', () => {
+    assert.equal(new Set(ids).size, ids.length, ids.join(','))
+  })
+  check('文案长度合规', () => {
+    assert.ok([...c['composer.actions'][0].label].length <= 10)
+    assert.ok([...c['composer.strip'][0].text].length <= 24)
+    assert.ok([...c.panels[0].title].length <= 16)
+  })
 }
 
 console.log('== 1. 文本清洗 ==')
@@ -110,6 +139,95 @@ console.log('== 4. 桥接注册 ==')
     const out = reg.read({ message: '   \n  ' })
     assert.ok(out.toast)
   })
+}
+
+console.log('== 5. 原生入口 / 状态条 / 面板 ==')
+{
+  const { ctx, reg } = fakeCtx()
+  installDshGo(ctx, {
+    speak: async () => wavOf(60),
+    ensureReady: async () => {},
+    status: () => ({
+      ready: true,
+      provider: 'breeze',
+      smart: true,
+      ttsLabel: 'BreezeBlue 流式',
+      voiceLabel: 'voc_smoke',
+      emotionLabel: '智能（LLM）',
+      asrLabel: '本地流式',
+      voiceprintLabel: '关',
+    }),
+  })
+
+  check('胶囊点按打开原生面板', () => {
+    assert.deepEqual(reg['voice-open']({}, {}), { open: 'panel:voice-panel' })
+  })
+  check('状态条推送语音状态', () => {
+    assert.equal(reg.strip.id, 'voice-strip')
+    const emitted = []
+    const cancel = reg.strip.fn({}, (d) => emitted.push(d), { locale: 'zh' })
+    assert.ok(emitted.length >= 1)
+    assert.match(emitted[0].text, /智能情感/)
+    assert.equal(emitted[0].icon, 'speaker')
+    assert.equal(emitted[0].tone, 'good')
+    cancel()
+  })
+  check('未就绪时状态条/试听都给出明确提示', () => {
+    const { ctx: c2, reg: r2 } = fakeCtx()
+    installDshGo(c2, { speak: async () => wavOf(10), status: () => ({ ready: false }) })
+    const emitted = []
+    const cancel = r2.strip.fn({}, (d) => emitted.push(d), { locale: 'zh' })
+    assert.equal(emitted[0].text, '语音 · 未就绪')
+    assert.equal(emitted[0].tone, 'warn')
+    cancel()
+    assert.deepEqual(r2.panel.spec.actions.test(), { toast: '语音引擎未就绪，请先加载模型' })
+  })
+  check('面板视图/数据/动作注册', () => {
+    assert.equal(reg.panel.id, 'voice-panel')
+    const view = reg.panel.spec.view({}, { locale: 'zh' })
+    assert.equal(view.type, 'stack')
+    assert.ok(view.children.some((x) => x.type === 'keyValue'))
+    assert.ok(view.children.some((x) => x.type === 'actions'))
+    const data = []
+    reg.panel.spec.data({}, (d) => data.push(d))
+    assert.equal(data[0].ttsLabel, 'BreezeBlue 流式')
+    assert.equal(data[0].emotionLabel, '智能（LLM）')
+    assert.ok(reg.panel.spec.actions.test && reg.panel.spec.actions.stop && reg.panel.spec.actions.refresh)
+    // 视图里的每个 data 绑定都能在 data 对象里找到；动作 id 都有 handler。
+    const bindings = []
+    const actions = []
+    const walk = (node) => {
+      if (!node || typeof node !== 'object') return
+      if (typeof node.$ === 'string' && node.$.startsWith('data.')) bindings.push(node.$.slice(5))
+      if (typeof node.action === 'string') actions.push(node.action)
+      for (const v of Object.values(node)) {
+        if (Array.isArray(v)) v.forEach(walk)
+        else if (v && typeof v === 'object') walk(v)
+      }
+    }
+    walk(view)
+    for (const key of bindings) assert.ok(key in data[0], `missing data.${key}`)
+    for (const id of actions) assert.ok(typeof reg.panel.spec.actions[id] === 'function', `missing action ${id}`)
+    assert.ok(Buffer.byteLength(JSON.stringify(view)) < 32 * 1024, 'view < 32 KiB')
+  })
+  check('面板停止/刷新返回合法效果', () => {
+    const stop = reg.panel.spec.actions.stop()
+    assert.ok(stop.some((e) => e.type === 'audio' && e.op === 'stop'))
+    assert.deepEqual(reg.panel.spec.actions.refresh(), { refresh: 'voice-panel' })
+  })
+  try {
+    const effects = reg.panel.spec.actions.test()
+    const audio = effects.find((e) => e.type === 'audio')
+    assert.ok(audio && audio.op === 'play', '试听返回 audio.play')
+    const out = await reg.media({}, { key: audio.key, signal: new AbortController().signal })
+    assert.equal(out.contentType, 'audio/wav')
+    assert.equal(out.body.toString('ascii', 0, 4), 'RIFF')
+    passed++
+    console.log('  ✓ 面板试听合成 WAV')
+  } catch (e) {
+    failed++
+    console.error(`  ✗ 面板试听合成 WAV: ${e?.message || e}`)
+  }
 }
 
 // 异步部分单独跑

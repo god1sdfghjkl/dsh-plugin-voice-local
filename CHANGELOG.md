@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.9.13 — 2026-11-15
+
+- **dsh-go 原生固定入口（A 方案）**：不依赖网页，在原生界面加输入框胶囊「语音」、
+  输入框上方状态条和原生「语音」面板。
+  - `composer.actions`：`voice-open` 点按打开 `panel:voice-panel`。
+  - `composer.strip`：`voice-strip` 显示「语音 · 就绪 / Breeze / 智能情感 / 未就绪」，
+    点按打开面板。
+  - `panels`：`voice-panel` 显示朗读通道、音色、自动情感、ASR、声纹和状态；
+    按钮「试听音色 / 停止朗读 / 刷新」。
+  - 面板试听复用现有 `media`/`speak` 链路，和长按「朗读」同一套音频会话；语音输入仍用
+    dsh-go 自带麦克风，插件不申请原生录音权限。
+  - 清单通过 dsh-go 官方 `manifest` schema 校验；面板视图通过 `view` schema 校验（754 B）。
+  - `test/dshgo-smoke.mjs` 扩展到 19/0：清单 id 唯一/文案上限、面板绑定、动作、试听 WAV、
+    未就绪提示。
+
 ## 0.9.12 — 2026-11-15
 
 - **智能情感（可选，社区方案）**：在关键词规则之上增加 LLM 按句判断。参考

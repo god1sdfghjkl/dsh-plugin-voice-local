@@ -9,7 +9,7 @@
 
 | 文件 | 改动 |
 |---|---|
-| `package.json` | 增加 `dshGo` 清单（约 25 行） |
+| `package.json` | 增加 `dshGo` 清单（胶囊/状态条/面板/朗读，约 60 行） |
 | `lib/dshgo.js` | 新增，约 180–220 行，独立适配层 |
 | `lib/index.js` | 加 1 行 import + 1 行调用（在 `apply` 末尾） |
 | `lib/client.js` | **0 改动** |
@@ -48,6 +48,16 @@ dshGo.onCapability()  →  收到 audio.ended/stopped 清状态
   "wants": ["message"],
   "capabilities": ["audio", "voice"],
   "contributes": {
+    "composer.actions": [
+      { "id": "voice-open", "label": "语音", "icon": "mic" }
+    ],
+    "composer.strip": [
+      { "id": "voice-strip", "icon": "speaker", "text": "语音", "panel": "voice-panel" }
+    ],
+    "panels": [
+      { "id": "voice-panel", "title": "语音", "icon": "mic",
+        "placement": ["session.tab", "features", "chat.panel"] }
+    ],
     "message.actions": [
       { "id": "read", "label": "朗读", "icon": "speaker", "requires": ["audio"] }
     ],
@@ -58,7 +68,10 @@ dshGo.onCapability()  →  收到 audio.ended/stopped 清状态
 
 - `wants: ["message"]`：长按消息时 App 附带正文，适配层不用按 id 查会话；
 - `capabilities: ["audio","voice"]`：`audio` 播放 WAV，`voice` 让用户一开口 App 先在本地停掉朗读；
-- `message.actions` 上限 2 条、label ≤12 字；这里只放 1 条。
+- `message.actions` 上限 2 条、label ≤12 字；`composer.actions` 上限 2 条、label ≤10 字；
+- `voice-open` / `voice-strip` / `voice-panel` / `read` / `speech` 五个 id 全局唯一；
+- `composer.actions` 没有 `panel` 字段，所以 `on('voice-open')` 返回 `{ open: 'panel:voice-panel' }`；
+- `composer.strip` 的 `panel` 字段直接打开面板；运行时用 `ctx.dshGo.strip()` 把静态「语音」换成动态状态。
 
 ## 新增 `lib/dshgo.js`
 
@@ -144,6 +157,34 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
   都会记录主模型的 `provider/model`；智能情感因此能在原生「朗读」里沿用同一个主模型。
 - 规则模式（`breezeSmartEmotion=false`）零额外 LLM；智能模式失败/超时回退规则，不阻断朗读。
 
+## 原生固定入口（0.9.13，A 方案）
+
+不做网页岛、不做可拖动，全部走 dsh-go 原生插槽：
+
+- **输入框胶囊「语音」**：`composer.actions` 的 `voice-open`；点按返回
+  `{ open: 'panel:voice-panel' }`，打开原生面板。
+- **输入框上方状态条**：`composer.strip` 的 `voice-strip`；`ctx.dshGo.strip()` 每 15 秒
+  推送「语音 · 就绪 / Breeze / 智能情感 / 未就绪」，点按同样打开面板。
+- **原生「语音」面板**：`panels` 的 `voice-panel`；显示朗读通道、音色、自动情感、ASR、
+  声纹和状态；按钮「试听音色 / 停止朗读 / 刷新」。
+  - 试听复用同一个 `media:speech` + `speak()` 链路，和长按「朗读」共用 audio/voice 会话；
+  - `stop` 返回 `audio.stop + voice.stop`；
+  - `refresh` 返回 `{ refresh: 'voice-panel' }` 让 App 重新拉数据。
+- **语音输入仍用 dsh-go 自带麦克风**：插件不申请原生录音权限，也不假装能替用户按系统麦克风。
+- 面板视图只用 v1 组件（`stack / callout / keyValue / actions`），老 App 也能画；
+  754 B、6 个 keyValue、3 个按钮，远低于 32 KiB / 120 组件上限。
+
+对应的 `lib/dshgo.js` 注册：
+
+```js
+ctx.dshGo.on('voice-open', () => ({ open: 'panel:voice-panel' }))
+ctx.dshGo.strip('voice-strip', (scope, emit) => emit({ text: '语音 · 就绪', icon: 'speaker' }))
+ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, refresh } })
+```
+
+`test` 会调用 `startJob('你好，这是 dsh-go 原生语音试听。')`，App 再 GET `media:speech`；
+`data` 里的绑定键与 `view` 中的 `{ $: 'data.*' }` 一一对应，冒烟测试会检查漏键。
+
 ## ASR 怎么接
 
 **不改现有 ASR。** dsh-go 原生界面用官方语音输入：
@@ -173,7 +214,8 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
    - 长文本分块拼接；空消息/超长/失败路径。
 2. `node --check lib/index.js`、`client-smoke`、`host-smoke`、`voiceprint-smoke` 全绿。
 3. 桌面装包后网页模式无回归。
-4. 真机 dsh-go：装本机引擎 → 装本插件 → 长按回复「朗读」→ 出声；开口打断；网页模式仍完整。
+4. 真机 dsh-go：装本机引擎 → 装本插件 → 输入框上方出现「语音」胶囊/状态条 →
+   点开原生面板 →「试听音色」出声 →「停止朗读」停住；长按回复「朗读」仍可用；网页模式仍完整。
 
 ## 改动清单（最终）
 
@@ -193,9 +235,14 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
 
 `client.js`、引擎、路由、模型格式都不动。
 
-## 实现状态（0.9.8）
+## 实现状态（0.9.13）
 
-已落地：`package.json` 的 `dshGo`、`lib/dshgo.js`、`lib/index.js` 的
-`installDshGo(ctx, { speak, ensureReady })` 调用，以及 `test/dshgo-smoke.mjs`。
-`read` 只声明消息菜单；多块 WAV 由 `concatWav()` 拼接；没有 `composer.strip`（减少一处状态源）。
-真机 dsh-go 的安装包发布后即可验证。
+已落地：`package.json` 的 `dshGo`（`composer.actions` / `composer.strip` / `panels` /
+`message.actions` / `media`）、`lib/dshgo.js`、`lib/index.js` 的
+`installDshGo(ctx, { speak, ensureReady, resolveStyle, status })` 调用，以及
+`test/dshgo-smoke.mjs`（19/0）。
+
+- 长按「朗读」：多块 WAV 由 `concatWav()` 拼接；
+- 原生入口：胶囊 + 动态状态条 + 原生面板（试听/停止/刷新）；
+- 清单通过 dsh-go 官方 `manifest` schema，面板视图通过 `view` schema；
+- 真机 dsh-go 的安装包发布后即可验证。

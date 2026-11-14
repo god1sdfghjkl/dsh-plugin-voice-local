@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-voice-local",
-  "version": "0.9.12",
-  "description": "Local full-duplex voice for DeepSeek Harness: resident ONNX TTS + sherpa-onnx ASR inside the host (worker_threads), taps llm/stream to read replies aloud, exposes loopback-only routes and an SSE channel. No Python process, no extra ports, no cloud speech APIs.",
+  "version": "0.9.13",
+  "description": "Local full-duplex voice for DeepSeek Harness: resident ONNX TTS + sherpa-onnx ASR inside the host (worker_threads), optional BreezeBlue streaming TTS, taps llm/stream to read replies aloud, exposes loopback-only routes, an SSE channel and native dsh-go entry. No Python process, no extra ports.",
   "author": "god1sdfghjkl",
   "homepage": "https://github.com/god1sdfghjkl/dsh-plugin-voice-local#readme",
   "repository": {
@@ -85,7 +85,7 @@
     "v": 1,
     "minApp": "1.0.0",
     "title": {
-      "zh": "本地朗读",
+      "zh": "本地语音",
       "en": "Local Voice"
     },
     "icon": "speaker",
@@ -97,6 +97,33 @@
       "voice"
     ],
     "contributes": {
+      "composer.actions": [
+        {
+          "id": "voice-open",
+          "label": "语音",
+          "icon": "mic"
+        }
+      ],
+      "composer.strip": [
+        {
+          "id": "voice-strip",
+          "icon": "speaker",
+          "text": "语音",
+          "panel": "voice-panel"
+        }
+      ],
+      "panels": [
+        {
+          "id": "voice-panel",
+          "title": "语音",
+          "icon": "mic",
+          "placement": [
+            "session.tab",
+            "features",
+            "chat.panel"
+          ]
+        }
+      ],
       "message.actions": [
         {
           "id": "read",
