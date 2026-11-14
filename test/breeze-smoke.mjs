@@ -61,6 +61,41 @@ try {
   globalThis.fetch = realFetch
 }
 
+console.log('== 情感控制（voice_settings） ==')
+try {
+  let sent = null
+  globalThis.fetch = async (_url, init) => {
+    sent = JSON.parse(init.body)
+    return {
+      ok: true,
+      body: {
+        getReader: () => {
+          let done = false
+          return { read: async () => (done ? { done: true } : (done = true, { value: pcmChunk(1, 1), done: false })) }
+        },
+      },
+    }
+  }
+  const b = new BreezeTts({
+    apiKey: 'brz_secret', voiceId: 'voc_x',
+    instructions: '用温柔、轻声的语气念。',
+    guidanceScale: 2.5, speed: 1.1, volume: 1.2, speakerBoost: true,
+  })
+  await b.synth('你好')
+  check('instructions 传入', () => assert.equal(sent.instructions, '用温柔、轻声的语气念。'))
+  check('guidance_scale 传入', () => assert.equal(sent.voice_settings.guidance_scale, 2.5))
+  check('speed 传入', () => assert.equal(sent.voice_settings.speed, 1.1))
+  check('volume 传入', () => assert.equal(sent.voice_settings.volume, 1.2))
+  check('speaker boost 传入', () => assert.equal(sent.voice_settings.use_speaker_boost, true))
+  check('范围钳制', () => {
+    const c = new BreezeTts({ apiKey: 'k', voiceId: 'v', guidanceScale: 99, speed: 0.1 })
+    assert.equal(c.guidanceScale, 10)
+    assert.equal(c.speed, 0.5)
+  })
+} finally {
+  globalThis.fetch = realFetch
+}
+
 console.log('== 错误处理 ==')
 try {
   globalThis.fetch = async () => ({

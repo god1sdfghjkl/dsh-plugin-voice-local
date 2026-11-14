@@ -54,7 +54,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.9.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.10.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -146,6 +146,8 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | `ttsProvider` | `local` | `local`（本机模型）或 `breeze`（BreezeBlue 流式 API） |
 | `breezeApiKey` / `breezeVoiceId` | `''` | BreezeBlue 的 `brz_...` 与 `voc_...`；建议用界面 `/tts/api` 保存，不写仓库 |
 | `breezeModel` / `breezeLanguage` / `breezeInstructions` | `''` / `zh` / `''` | BreezeBlue 模型 id、语言、表演说明 |
+| `breezeGuidance` / `breezeSpeed` / `breezeVolume` | `1` / `1` / `1` | 情感贴合强度（1–10）、语速（0.5–2×）、音量（0.01–2×） |
+| `breezeSpeakerBoost` | `false` | 是否启用 speaker boost（与高强度 instructions 同用时官方会忽略） |
 | `asrProvider` | `local` | `local`（本插件流式）或 `dsh`（官方 speechToText，仅整句定稿） |
 | `asrLanguage` | `zh` | 官方 ASR 的语言提示 |
 | `voiceprintEnabled` | `false` | 声纹锁开关（也可在界面里切） |
@@ -216,11 +218,22 @@ POST https://api.breeze.blue/v1/text-to-speech/{voice_id}/stream?output_format=p
 xi-api-key: brz_...
 Content-Type: application/json
 
-{"text":"你好","model_id":"breeze-tts-2","language_code":"zh"}
+{"text":"你好","model_id":"breeze-tts-2","language_code":"zh","instructions":"用温柔、轻声、像哄人一样的语气念，语速稍慢。","voice_settings":{"guidance_scale":1.8,"speed":0.95,"volume":1.0}}
 ```
 
 返回 24 kHz 单声道 16-bit PCM 分块。插件把它接进现有 TTS 队列：
 `/v1/.../stream` 的音频块一到就通过 SSE 推给浏览器播放，不用等整句合成完。
+
+**官方情感控制**（`breeze-tts-2`）：
+
+- `instructions`：用自然语言描述情境、意图、情绪强度、节奏和发声状态；必须与朗读文本同语言。
+  例：`用惊喜、开心的语气念，声音明亮，语速稍快，句尾上扬。`
+- `voice_settings.guidance_scale`：1–10，越高越贴合 `instructions`；官方建议表达性片段从 **1–3** 起步。
+- `voice_settings.speed`：0.5–2×，保持音高；`volume`：0.01–2×。
+- 音频标签（`[笑]`、`[叹气]`、`[耳语]`…）可写在中文正文里，属于文本内容；英文用圆括号。
+- 官方剩余能力：`use_speaker_boost`（与高强度 instructions 同用时会被忽略）、`/v1/text-to-speech/enhance` 只优化说明文本。
+
+面板里的「情感预设」（自然/温柔/开心/平静/认真/撒娇）会自动填好说明、强度和语速，可再手改。
 
 ![语音 API 设置](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@main/docs/images/voice-api-panel.png)
 
@@ -307,4 +320,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.9.9`：新增 **BreezeBlue 流式 TTS API**（`/tts/api` + 覆盖层「语音 API 设置」面板）和 **DSH 官方语音识别可选接入**（`asrProvider: dsh`，仅整句定稿）；另有 dsh-go 原生朗读、声纹设置面板（CAM++ 28MB）、7 套背景主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.10`：新增 **BreezeBlue 官方情感控制**（情感预设 + 表演说明 + 强度 1–10 + 语速/音量 + 流式 PCM）与 **DSH 官方 ASR 可选接入**（`asrProvider: dsh`，仅整句定稿）；另有 dsh-go 原生朗读、声纹面板（CAM++ 28MB）、7 套主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

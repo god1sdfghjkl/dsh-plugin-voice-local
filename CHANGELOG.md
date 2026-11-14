@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.10 — 2026-11-14
+
+- **BreezeBlue 官方情感控制**：`instructions`（情境/意图/情绪/节奏）+ `voice_settings.guidance_scale`
+  （1–10，官方建议表达性片段 1–3 起步）+ `speed`（0.5–2×，保持音高）+ `volume`（0.01–2×）+
+  `use_speaker_boost`。只传非默认值，避免无意改变默认音色。
+- **语音 API 面板**：新增「自然/温柔/开心/平静/认真/撒娇」情感预设，自动填说明、强度与语速；
+  新增情感强度、语速、音量滑杆；「保存并试听当前情感」先落盘再试听。
+- `tts-api.json` 持久化 `guidanceScale / speed / volume / speakerBoost`；
+  `BreezeTts.status()` 返回这些值，POST `/tts/api` 做范围钳制。
+- 新增 `breeze-smoke` 的情感参数断言与 API 持久化断言。
+- 实测（用户账号，2026-11-14）：同文本「平静」3.04s / RMS 0.063，「惊喜」2.07s / RMS 0.168，
+  证明 instructions + guidance + speed 生效；示例音频仅本机，未入仓。
+- 说明：API Key 仅存本机 `$DSH_HOME/voice-local/tts-api.json`（0600），仓库和 Release 均不含密钥。
+
 ## 0.9.9 — 2026-11-14
 
 - **BreezeBlue 流式 TTS API**：新增 `lib/tts/breeze.js`，接

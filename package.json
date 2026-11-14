@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-voice-local",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "description": "Local full-duplex voice for DeepSeek Harness: resident ONNX TTS + sherpa-onnx ASR inside the host (worker_threads), taps llm/stream to read replies aloud, exposes loopback-only routes and an SSE channel. No Python process, no extra ports, no cloud speech APIs.",
   "author": "god1sdfghjkl",
   "homepage": "https://github.com/god1sdfghjkl/dsh-plugin-voice-local#readme",

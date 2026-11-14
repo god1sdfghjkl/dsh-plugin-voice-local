@@ -19,6 +19,8 @@ voice-local-data/
 .env
 .env.*
 !.env.example
+tts-api.json
+breeze-speak.json
 *.pem
 *.key
 secrets/

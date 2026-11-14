@@ -78,6 +78,10 @@ try {
     model: 'breeze-tts-2',
     language: 'zh',
     instructions: '温柔一点',
+    guidanceScale: 2.5,
+    speed: 1.1,
+    volume: 1.2,
+    speakerBoost: true,
     asrProvider: 'dsh',
     asrLanguage: 'zh',
   })
@@ -90,9 +94,13 @@ try {
   const saved = JSON.parse(readFileSync(file, 'utf8'))
   ok(saved.provider === 'breeze' && saved.apiKey === 'brz_smoke_secret_value', '文件保存 key（仅本机）', saved)
   ok(saved.asrProvider === 'dsh', '文件保存 asrProvider')
+  ok(saved.guidanceScale === 2.5 && saved.speed === 1.1 && saved.volume === 1.2, '文件保存情感参数', saved)
+  ok(saved.speakerBoost === true, '文件保存 speakerBoost', saved)
 
   res = await call(state, '/voice-local/tts/api', 'GET')
   ok(res.json?.breeze?.hasKey === true, 'GET 报告 hasKey')
+  ok(res.json?.breeze?.guidanceScale === 2.5, 'GET 返回情感强度', res.json?.breeze)
+  ok(res.json?.breeze?.speed === 1.1, 'GET 返回语速', res.json?.breeze)
   ok(!res.text.includes('brz_smoke_secret_value'), 'GET 不回显完整 Key', res.text)
   ok(String(res.json?.breeze?.keyPrefix || '').includes('…'), 'GET 只给前缀', res.json?.breeze)
 
