@@ -66,6 +66,7 @@ console.log('== 0. 清单 ==')
     assert.equal(c['composer.actions'][0].id, 'voice-open')
     assert.equal(c['composer.strip'][0].panel, 'voice-panel')
     assert.equal(c.panels[0].id, 'voice-panel')
+    assert.equal(c.panels[0].presentation, 'sheet')
   })
   check('贡献 id 全局唯一', () => {
     assert.equal(new Set(ids).size, ids.length, ids.join(','))

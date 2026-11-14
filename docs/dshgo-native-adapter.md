@@ -157,7 +157,7 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
   都会记录主模型的 `provider/model`；智能情感因此能在原生「朗读」里沿用同一个主模型。
 - 规则模式（`breezeSmartEmotion=false`）零额外 LLM；智能模式失败/超时回退规则，不阻断朗读。
 
-## 原生固定入口（0.9.13–0.9.15，A 方案）
+## 原生固定入口（0.9.13–0.9.16，A 方案）
 
 不做网页岛、不做可拖动，全部走 dsh-go 原生插槽：
 
@@ -168,6 +168,8 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
 - **原生「语音通话」面板**：`panels` 的 `voice-panel`；顶部动态「语音通话已就绪 / 未就绪」，
   中间「朗读通道 / 音色 / 语音输入 / 自动情感 / 状态」，按钮
   「试听音色 / 停止朗读 / 情感 / 通道」（4 个，正好在上限内）。
+  - `presentation: "sheet"`：点状态条/胶囊/聊天页「插件」时以**弹层**盖在当前对话上，
+    关闭后回到聊天和状态条，不整页跳转；老 App 忽略该字段时仍按页打开。
   - 「语音输入」明确显示 **dsh-go 官方语音输入**（App 自带麦克风/SenseVoice），不走插件的
     `asrProvider`；
   - 试听复用同一个 `media:speech` + `speak()` 链路，和长按「朗读」共用 audio/voice 会话；
@@ -180,6 +182,9 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
 - **语音输入仍用 dsh-go 自带麦克风**：插件不申请原生录音权限，也不假装能替用户按系统麦克风。
 - 面板视图只用 v1 组件（`stack / callout / text / keyValue / actions`），老 App 也能画；
   849 B、5 个 keyValue、4 个按钮，远低于 32 KiB / 120 组件上限。
+- **边界**：原生协议没有插件可拖拽、可缩到屏幕角落的悬浮窗；`sheet` 是原生里最接近
+  「展开/收起小窗」的形态。真正任意位置悬浮只能走 `shell.overlay` 网页岛（WebView，
+  且原生麦克风仍归 App）或修改 dsh-go App。
 
 对应的 `lib/dshgo.js` 注册：
 
@@ -201,6 +206,13 @@ ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, emotion, pro
 - 本机引擎里模型跑在手机 proot，不需要电脑。
 
 网页模式仍可用本插件原有的浏览器流式 ASR；两种入口互不冲突。
+
+注意区分两个“官方”：
+
+- **dsh-go 官方语音输入**：App 自己持有麦克风，识别完把文本放进输入框；插件不能把它
+  当成网页里的 `asrProvider` 选项，也不需要选——原生对话默认就是它。
+- **DSH 官方 ASR**：网页/桌面端 `asrProvider: dsh` 使用的 DSH 语音识别（仅整句定稿），
+  与 dsh-go App 的 SenseVoice 不是同一个入口。
 
 ## 声纹
 
@@ -242,7 +254,7 @@ ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, emotion, pro
 
 `client.js`、引擎、路由、模型格式都不动。
 
-## 实现状态（0.9.15）
+## 实现状态（0.9.16）
 
 已落地：`package.json` 的 `dshGo`（`composer.actions` / `composer.strip` / `panels` /
 `message.actions` / `media`）、`lib/dshgo.js`、`lib/index.js` 的
@@ -250,6 +262,6 @@ ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, emotion, pro
 `test/dshgo-smoke.mjs`（25/0）。
 
 - 长按「朗读」：多块 WAV 由 `concatWav()` 拼接；
-- 原生入口：胶囊 + 动态状态条 + 原生面板（试听/停止/刷新）；
+- 原生入口：胶囊 + 动态状态条 + 原生面板（试听/停止/情感/通道，sheet 弹层）；
 - 清单通过 dsh-go 官方 `manifest` schema，面板视图通过 `view` schema；
 - 真机 dsh-go 的安装包发布后即可验证。
