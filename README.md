@@ -16,6 +16,8 @@
 
 - **全屏通话界面**：说话 → 停顿约 0.9s 自动发送 → 回复流式字幕 + 语音朗读 → 开口可打断。
 - **通话口吻**：通话期间自动注入“像正常人说话”的固定规则（口语、短句、不列清单、不输出 Markdown/括号动作/AI 套话），挂断后恢复默认书面风格；配置 `callPersona: false` 可关闭。
+- **BreezeBlue 流式 TTS（可选）**：设置 `ttsProvider: "breeze"`，填 API Key / `voice_id`，接 `/v1/text-to-speech/{voice_id}/stream` 的 24 kHz PCM 流，边生成边播；覆盖层「语音 API 设置」可保存/试听。没有 Key 自动回退本地 TTS。
+- **DSH 官方 ASR（可选）**：`asrProvider: "dsh"` 走官方 `speechToText`（本地 SenseVoice 或云端 provider）；官方只有整句定稿、没有流式 partial，默认仍用本插件的边说边出字。
 - **7 套背景主题**：暗色 4 套（夜色苔绿 / 深夜靛蓝 / 暗夜梅紫 / 暖夜琥珀）+ 亮色 3 套（晨光纸白 / 暖沙米色 / 静谧天蓝）。选择立即生效并记忆；下拉框、字幕、球体配色一起切换。
 - **可换模型**：TTS / ASR 都是模型注册表——往目录里丢模型即可出现，支持热切换，不重启宿主。
 - **模型下载器**：`model.json` 声明下载清单，界面内显示进度；断点 `.part` + SHA256 校验；失败可重试。
@@ -52,7 +54,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.8.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.9.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -141,6 +143,11 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | `autoEndSilenceMs` | `900` | 说完停顿多久自动提交 |
 | `minSpeechMs` | `200` | 至少说多久才算一句 |
 | `bargeIn` / `bargeInThreshold` | `true` / `0.025` | 朗读期间是否允许开口打断及门限 |
+| `ttsProvider` | `local` | `local`（本机模型）或 `breeze`（BreezeBlue 流式 API） |
+| `breezeApiKey` / `breezeVoiceId` | `''` | BreezeBlue 的 `brz_...` 与 `voc_...`；建议用界面 `/tts/api` 保存，不写仓库 |
+| `breezeModel` / `breezeLanguage` / `breezeInstructions` | `''` / `zh` / `''` | BreezeBlue 模型 id、语言、表演说明 |
+| `asrProvider` | `local` | `local`（本插件流式）或 `dsh`（官方 speechToText，仅整句定稿） |
+| `asrLanguage` | `zh` | 官方 ASR 的语言提示 |
 | `voiceprintEnabled` | `false` | 声纹锁开关（也可在界面里切） |
 | `voiceprintThreshold` | `0.7` | 声纹余弦阈值（0~1，越大越严） |
 | `voiceprintModel` | `$dataRoot/models/voiceprint/campplus_zh.onnx` | 声纹模型路径 |
@@ -182,6 +189,8 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | POST | `/voice-local/asr/start` \| `/asr/feed` \| `/asr/final` | 流式识别（PCM16LE @16k mono） |
 | POST | `/voice-local/speak` | 文本转 WAV（手动测试用） |
 | POST | `/voice-local/cancel` | 打断当前 TTS |
+| GET / POST | `/voice-local/tts/api` | 读取/保存 TTS 通道与 ASR provider（`breeze` / `local` / `dsh`） |
+| POST | `/voice-local/tts/test` | 用当前 TTS 通道合成一句试听 WAV |
 | GET | `/voice-local/voiceprint/status` | 声纹状态（模型/档案/开关/阈值/策略） |
 | POST | `/voice-local/voiceprint/enable` | 开关声纹锁 `{enabled}` |
 | POST | `/voice-local/voiceprint/profiles` | 新增声纹档案 `{nickname, clips:[base64 PCM16×3], tone}` |
@@ -195,6 +204,52 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | POST | `/voice-local/voiceprint/clear` | 清空全部声纹 |
 | POST | `/voice-local/voiceprint/fetch` | 下载声纹模型（SSE 进度） |
 | GET | `/voice-local/assets/*` | 内置字体等静态资源 |
+
+## 外部语音 API
+
+### BreezeBlue（流式 TTS）
+
+BreezeBlue 的流式接口原生支持边生成边返回：
+
+```http
+POST https://api.breeze.blue/v1/text-to-speech/{voice_id}/stream?output_format=pcm
+xi-api-key: brz_...
+Content-Type: application/json
+
+{"text":"你好","model_id":"breeze-tts-2","language_code":"zh"}
+```
+
+返回 24 kHz 单声道 16-bit PCM 分块。插件把它接进现有 TTS 队列：
+`/v1/.../stream` 的音频块一到就通过 SSE 推给浏览器播放，不用等整句合成完。
+
+![语音 API 设置](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@main/docs/images/voice-api-panel.png)
+
+配置方式（二选一）：
+
+1. 覆盖层 → 模型下拉 →「语音 API 设置」→ TTS 通道选 BreezeBlue，填 Key / `voice_id`，保存并试听；
+2. 或直接调接口（Key 只写本机 `$DSH_HOME/voice-local/tts-api.json`，不回显）：
+
+```bash
+curl -X POST http://127.0.0.1:57885/voice-local/tts/api \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"breeze","apiKey":"brz_...","voiceId":"voc_...","model":"breeze-tts-2","language":"zh"}'
+```
+
+没有 Key / `voice_id` 时自动回退本地模型，不会让通话中断。
+
+### DSH 官方语音识别
+
+可以接，但要注意能力边界：
+
+- 官方 `@deepseek-ai/dsh-experimental-voice-input-bundle` 提供本地 SenseVoice（或云端 provider），
+  通过宿主 `ctx.speechToText` 暴露 `resolve()` / `transcribe()`；
+- 它**只支持完整录音的整句转写，没有流式 partial，也没有语音合成**；
+- 插件里设 `asrProvider: "dsh"` 后，VAD 收完一句 → 调官方 `transcribe` → 一次出最终文本；
+  代价是通话中不再“边说边出字”，但识别模型/语言可以复用官方配置；
+- 默认 `asrProvider: "local"` 仍用本插件的 sherpa 流式 ASR，保留边说边出字。
+
+官方语音输入需要先在 DSH 插件里安装/启用；没有 `speechToText` 服务时插件会发 `asr warn`
+并恢复聆听，不会卡死。
 
 ## 架构
 
@@ -252,4 +307,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.9.8`：新增 **dsh-go 原生朗读适配**（同包 `dshGo` 清单，长按回复即读，模型在本机引擎跑）；另有声纹设置面板（CAM++ 28MB，本地注册/余弦比对，只回答本人）、顶栏上移 + 7 套背景主题 + 自绘下拉 + 模型下载器（分段/3 路并发/断点校验/首次启动自动下载示例）+ 手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.9`：新增 **BreezeBlue 流式 TTS API**（`/tts/api` + 覆盖层「语音 API 设置」面板）和 **DSH 官方语音识别可选接入**（`asrProvider: dsh`，仅整句定稿）；另有 dsh-go 原生朗读、声纹设置面板（CAM++ 28MB）、7 套背景主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

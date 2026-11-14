@@ -1,6 +1,6 @@
 # dsh-plugin-voice-local
 
-Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streaming ASR run inside the host process (worker threads). No extra ports, no Python sidecar, no cloud speech APIs. Click the 🎙 in the composer to enter a fullscreen call UI: speak, replies stream as text and audio, and you can barge in at any time.
+Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streaming ASR run inside the host process (worker threads). No extra ports, no Python sidecar; local models by default, with an optional BreezeBlue streaming TTS API. Click the 🎙 in the composer to enter a fullscreen call UI: speak, replies stream as text and audio, and you can barge in at any time.
 
 [![release](https://img.shields.io/github/v/release/god1sdfghjkl/dsh-plugin-voice-local?label=release)](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -18,6 +18,37 @@ Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streamin
 - **Voiceprint (optional)**: CAM++ speaker verification, up to 5 profiles, 3-prompt randomized
   enrollment, threshold slider, per-profile tone/permission metadata. Mismatched voices are not
   submitted to the session. Embeddings stay local.
+- **BreezeBlue streaming TTS (optional)**: `ttsProvider: "breeze"` streams 24 kHz PCM from
+  `/v1/text-to-speech/{voice_id}/stream` into the existing playback queue. Configure via the
+  in-overlay “Voice API” panel or `POST /voice-local/tts/api`; missing key falls back to local TTS.
+- **DSH official ASR (optional)**: `asrProvider: "dsh"` uses the host `ctx.speechToText` service
+  (official local SenseVoice or a cloud provider). It is whole-utterance final-only, so live
+  partial captions are lost; the default `local` keeps streaming ASR.
+
+## External voice APIs
+
+BreezeBlue supports real streaming:
+
+```http
+POST https://api.breeze.blue/v1/text-to-speech/{voice_id}/stream?output_format=pcm
+xi-api-key: brz_...
+Content-Type: application/json
+
+{"text":"hello","model_id":"breeze-tts-2","language_code":"en"}
+```
+
+It returns 24 kHz mono signed 16-bit PCM chunks; the plugin forwards each chunk over SSE as it
+arrives. Configure the key/voice id locally:
+
+```bash
+curl -X POST http://127.0.0.1:57885/voice-local/tts/api \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"breeze","apiKey":"brz_...","voiceId":"voc_...","language":"zh"}'
+```
+
+The key is stored in `$DSH_HOME/voice-local/tts-api.json` (mode 0600) and is never returned by
+the status route. The official DSH speech input is **final-only** (no partials, no synthesis);
+with `asrProvider: "dsh"` the plugin transcribes one complete VAD utterance at a time.
 
 ## Requirements
 
@@ -31,7 +62,7 @@ Install the tarball from the DSH plugin page, or download it from the
 [GitHub Releases](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases) until the npm package is out:
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.8.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.9.tgz
 ```
 
 Refresh the host page after installing because the client bundle is cached.

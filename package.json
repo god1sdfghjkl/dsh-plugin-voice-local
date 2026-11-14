@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-voice-local",
-  "version": "0.9.8",
+  "version": "0.9.9",
   "description": "Local full-duplex voice for DeepSeek Harness: resident ONNX TTS + sherpa-onnx ASR inside the host (worker_threads), taps llm/stream to read replies aloud, exposes loopback-only routes and an SSE channel. No Python process, no extra ports, no cloud speech APIs.",
   "author": "god1sdfghjkl",
   "homepage": "https://github.com/god1sdfghjkl/dsh-plugin-voice-local#readme",
@@ -43,8 +43,8 @@
     "dsh": ">=0.2.0 <0.3.0-0"
   },
   "scripts": {
-    "test": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/voiceprint-smoke.mjs && node test/call-persona-smoke.mjs && node test/dshgo-smoke.mjs && node test/client-smoke.mjs && node test/asr-smoke.mjs && node test/host-smoke.mjs",
-    "test:ci": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/call-persona-smoke.mjs && node test/dshgo-smoke.mjs && node test/client-smoke.mjs",
+    "test": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/voiceprint-smoke.mjs && node test/breeze-smoke.mjs && node test/tts-api-smoke.mjs && node test/dsh-asr-smoke.mjs && node test/call-persona-smoke.mjs && node test/dshgo-smoke.mjs && node test/client-smoke.mjs && node test/asr-smoke.mjs && node test/host-smoke.mjs",
+    "test:ci": "node test/parity.mjs && node test/models-smoke.mjs && node test/downloader-smoke.mjs && node test/breeze-smoke.mjs && node test/tts-api-smoke.mjs && node test/dsh-asr-smoke.mjs && node test/call-persona-smoke.mjs && node test/dshgo-smoke.mjs && node test/client-smoke.mjs",
     "test:parity": "node test/parity.mjs",
     "test:models": "node test/models-smoke.mjs",
     "test:download": "node test/downloader-smoke.mjs",
@@ -54,7 +54,10 @@
     "test:host": "node test/host-smoke.mjs",
     "models:manifest": "node scripts/model-manifest.mjs",
     "test:persona": "node test/call-persona-smoke.mjs",
-    "test:dshgo": "node test/dshgo-smoke.mjs"
+    "test:dshgo": "node test/dshgo-smoke.mjs",
+    "test:breeze": "node test/breeze-smoke.mjs",
+    "test:api": "node test/tts-api-smoke.mjs",
+    "test:dsh-asr": "node test/dsh-asr-smoke.mjs"
   },
   "keywords": [
     "dsh",

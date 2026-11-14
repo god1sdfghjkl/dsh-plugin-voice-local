@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.9 — 2026-11-14
+
+- **BreezeBlue 流式 TTS API**：新增 `lib/tts/breeze.js`，接
+  `POST /v1/text-to-speech/{voice_id}/stream?output_format=pcm`（24 kHz 单声道 PCM），
+  边收 HTTP 音频块边通过现有 SSE 播放，不再等整句合成完。
+  - 配置：`ttsProvider: "breeze"`、`breezeApiKey`、`breezeVoiceId`、`breezeModel`、
+    `breezeLanguage`、`breezeInstructions`；也可用环境变量 `BREEZE_API_KEY`。
+  - 新增 `GET/POST /voice-local/tts/api`（保存到 `$DSH_HOME/voice-local/tts-api.json`，权限 600，
+    key 不回显）与 `POST /voice-local/tts/test`（试听）。
+  - 覆盖层模型菜单新增「语音 API 设置」面板：本地/Breeze 切换、Key、voice_id、model、
+    语言、表演说明、试听、保存。
+  - 没有 Key/voice_id 时自动回退本地 TTS。
+- **DSH 官方语音识别接入（可选）**：`asrProvider: "dsh"` 时用
+  `ctx.speechToText`（官方语音输入 bundle 的本地 SenseVoice 或云端 provider）做整句定稿；
+  **官方只有完整录音识别，没有流式 partial**，所以通话中不再边说边出字，停顿后一次出最终文本；
+  `asrProvider: "local"`（默认）保留本插件的流式识别。
+- 新增 `test/breeze-smoke.mjs`、`test/tts-api-smoke.mjs`、`test/dsh-asr-smoke.mjs`；API 面板、Breeze 流式适配与官方 ASR 通道通过 smoke。
+- README / 文档补充 BreezeBlue 与官方 ASR 说明。
+
 ## 0.9.8 — 2026-11-14
 
 - **dsh-go 原生界面适配（最小改动）**：同一份包新增 `dshGo` 清单与 `lib/dshgo.js`，长按助手回复即可「朗读」，App 原生播放；不改编排、不改客户端覆盖层、不改 TTS/ASR 引擎。
