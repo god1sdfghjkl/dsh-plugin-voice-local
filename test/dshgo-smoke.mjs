@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { pcm16ToWav } from '../lib/security.js'
-import { installDshGo, cleanForSpeech, splitForSpeech, concatWav } from '../lib/dshgo.js'
+import { installDshGo, cleanForSpeech, splitForSpeech, concatWav, nextEmotionMode } from '../lib/dshgo.js'
 
 let passed = 0
 let failed = 0
@@ -150,6 +150,7 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     status: () => ({
       ready: true,
       provider: 'breeze',
+      auto: true,
       smart: true,
       ttsLabel: 'BreezeBlue 流式',
       voiceLabel: 'voc_smoke',
@@ -157,6 +158,7 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
       asrLabel: '本地流式',
       voiceprintLabel: '关',
     }),
+    cycleEmotion: () => ({ ok: true, label: '智能（LLM）' }),
   })
 
   check('胶囊点按打开原生面板', () => {
@@ -192,6 +194,7 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     reg.panel.spec.data({}, (d) => data.push(d))
     assert.equal(data[0].ttsLabel, 'BreezeBlue 流式')
     assert.equal(data[0].emotionLabel, '智能（LLM）')
+    assert.equal(data[0].voiceLabel, 'voc_smoke')
     assert.ok(reg.panel.spec.actions.test && reg.panel.spec.actions.stop && reg.panel.spec.actions.refresh)
     // 视图里的每个 data 绑定都能在 data 对象里找到；动作 id 都有 handler。
     const bindings = []
@@ -214,6 +217,17 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     const stop = reg.panel.spec.actions.stop()
     assert.ok(stop.some((e) => e.type === 'audio' && e.op === 'stop'))
     assert.deepEqual(reg.panel.spec.actions.refresh(), { refresh: 'voice-panel' })
+  })
+  check('情感按钮三段循环：关 → 规则 → 智能 → 关', () => {
+    assert.deepEqual(nextEmotionMode(false, false), { autoEmotion: true, smartEmotion: false })
+    assert.deepEqual(nextEmotionMode(true, false), { autoEmotion: true, smartEmotion: true })
+    assert.deepEqual(nextEmotionMode(true, true), { autoEmotion: false, smartEmotion: false })
+  })
+  check('面板情感动作返回提示 + 刷新', () => {
+    const out = reg.panel.spec.actions.emotion()
+    assert.ok(Array.isArray(out) && out.length === 2)
+    assert.match(out[0].toast, /自动情感：智能/)
+    assert.deepEqual(out[1], { refresh: 'voice-panel' })
   })
   try {
     const effects = reg.panel.spec.actions.test()

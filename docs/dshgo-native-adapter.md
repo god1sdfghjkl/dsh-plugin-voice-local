@@ -157,7 +157,7 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
   都会记录主模型的 `provider/model`；智能情感因此能在原生「朗读」里沿用同一个主模型。
 - 规则模式（`breezeSmartEmotion=false`）零额外 LLM；智能模式失败/超时回退规则，不阻断朗读。
 
-## 原生固定入口（0.9.13，A 方案）
+## 原生固定入口（0.9.13 / 0.9.14，A 方案）
 
 不做网页岛、不做可拖动，全部走 dsh-go 原生插槽：
 
@@ -166,20 +166,22 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
 - **输入框上方状态条**：`composer.strip` 的 `voice-strip`；`ctx.dshGo.strip()` 每 15 秒
   推送「语音 · 就绪 / Breeze / 智能情感 / 未就绪」，点按同样打开面板。
 - **原生「语音」面板**：`panels` 的 `voice-panel`；显示朗读通道、音色、自动情感、ASR、
-  声纹和状态；按钮「试听音色 / 停止朗读 / 刷新」。
+  声纹和状态；按钮「试听音色 / 停止朗读 / 情感 / 刷新」（4 个，正好在上限内）。
   - 试听复用同一个 `media:speech` + `speak()` 链路，和长按「朗读」共用 audio/voice 会话；
   - `stop` 返回 `audio.stop + voice.stop`；
+  - `emotion` 按「关 → 关键词规则 → 智能（LLM）→ 关」循环，写回 `tts-api.json`，
+    返回 `toast + refresh`；本地 TTS 下返回「不适用」提示；
   - `refresh` 返回 `{ refresh: 'voice-panel' }` 让 App 重新拉数据。
 - **语音输入仍用 dsh-go 自带麦克风**：插件不申请原生录音权限，也不假装能替用户按系统麦克风。
-- 面板视图只用 v1 组件（`stack / callout / keyValue / actions`），老 App 也能画；
-  754 B、6 个 keyValue、3 个按钮，远低于 32 KiB / 120 组件上限。
+- 面板视图只用 v1 组件（`stack / callout / text / keyValue / actions`），老 App 也能画；
+  910 B、6 个 keyValue、4 个按钮，远低于 32 KiB / 120 组件上限。
 
 对应的 `lib/dshgo.js` 注册：
 
 ```js
 ctx.dshGo.on('voice-open', () => ({ open: 'panel:voice-panel' }))
 ctx.dshGo.strip('voice-strip', (scope, emit) => emit({ text: '语音 · 就绪', icon: 'speaker' }))
-ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, refresh } })
+ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, emotion, refresh } })
 ```
 
 `test` 会调用 `startJob('你好，这是 dsh-go 原生语音试听。')`，App 再 GET `media:speech`；
@@ -235,12 +237,12 @@ ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, refresh } })
 
 `client.js`、引擎、路由、模型格式都不动。
 
-## 实现状态（0.9.13）
+## 实现状态（0.9.14）
 
 已落地：`package.json` 的 `dshGo`（`composer.actions` / `composer.strip` / `panels` /
 `message.actions` / `media`）、`lib/dshgo.js`、`lib/index.js` 的
-`installDshGo(ctx, { speak, ensureReady, resolveStyle, status })` 调用，以及
-`test/dshgo-smoke.mjs`（19/0）。
+`installDshGo(ctx, { speak, ensureReady, resolveStyle, status, cycleEmotion })` 调用，以及
+`test/dshgo-smoke.mjs`（21/0）。
 
 - 长按「朗读」：多块 WAV 由 `concatWav()` 拼接；
 - 原生入口：胶囊 + 动态状态条 + 原生面板（试听/停止/刷新）；
