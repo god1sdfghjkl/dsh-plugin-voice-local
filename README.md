@@ -55,7 +55,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.14.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.15.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -301,7 +301,7 @@ curl -X POST http://127.0.0.1:57885/voice-local/tts/api \
 - 浏览器/手机端**现在就能用**：`client.js` 已做响应式（安全区、≥44px 触控、窄屏顶栏、矮窗横屏）。
 - 手机浏览器访问需要 **HTTPS 或 localhost** 才能拿到麦克风；局域网 `http://192.168.x.x` 会被 Chrome 拒绝。推荐 Tailscale / Caddy 反代或 `dsh web` 的本机模式。
 - **dshgo（DSH 口袋）**：Android App + 局域网反代插件（[xiazhi88/dshgo](https://github.com/xiazhi88/dshgo)）。App 的 WebView 主动拒绝网页麦克风（`onPermissionRequest` 一律 `deny`），所以 App 内不能跑全双工；插件检测到非安全上下文会自动进入**手机朗读模式**（App 自带语音输入 + 本地 TTS 朗读回复）；窄屏右下角还有独立「语音」浮动入口，手机浏览器可书签 `/voice-local/mobile` 直达语音。想要全双工，用手机浏览器 + Tailscale HTTPS 打开 dshgo 入口，或 fork App 放行音频权限。详见 [docs/dshgo.md](docs/dshgo.md)；手机本机跑模型的可行性见 [docs/phone-local.md](docs/phone-local.md)。
-- 开源手机端 **dsh-go**（[ccch1mneyyy/dsh-go](https://github.com/ccch1mneyyy/dsh-go)）是另一套：App 内置 Linux + Node + **本机引擎**，DSH 直接跑在手机上，插件装到“本机”。本插件 0.9.8 起随包带 `dshGo` 原生清单：长按助手回复 →「朗读」，App 原生播放；ASR 用 dsh-go 官方本地 SenseVoice。0.9.13 新增**原生固定语音入口**：输入框胶囊「语音」、输入框上方状态条、原生「语音」面板（试听/停止/情感/刷新/状态），不依赖网页；0.9.14 面板可直接循环「关 → 规则 → 智能」情感并写回配置。语音输入仍用 App 自带麦克风。0.9.12 的智能情感也专门适配了原生朗读：没有网页端 SSE 时也会记住主模型路由，整条消息只生成一次情感、所有分段共用。详见 [docs/dshgo-native-adapter.md](docs/dshgo-native-adapter.md) 与 [docs/community-phone-options.md](docs/community-phone-options.md)。
+- 开源手机端 **dsh-go**（[ccch1mneyyy/dsh-go](https://github.com/ccch1mneyyy/dsh-go)）是另一套：App 内置 Linux + Node + **本机引擎**，DSH 直接跑在手机上，插件装到“本机”。本插件 0.9.8 起随包带 `dshGo` 原生清单：长按助手回复 →「朗读」，App 原生播放；ASR 用 dsh-go 官方本地 SenseVoice。0.9.13 新增**原生固定语音入口**：输入框胶囊「语音」、输入框上方状态条、原生「语音通话」面板（试听/停止/情感/通道/状态），不依赖网页；0.9.14 面板可直接循环「关 → 规则 → 智能」情感并写回配置；0.9.15 面板改成通话卡片，可切换云端 BreezeBlue 或本地 TTS，并修复 dsh-go 诊断里的效果格式/提示限流错误。语音输入仍用 **dsh-go 官方语音输入**（App 自带麦克风/SenseVoice）。0.9.12 的智能情感也专门适配了原生朗读：没有网页端 SSE 时也会记住主模型路由，整条消息只生成一次情感、所有分段共用。详见 [docs/dshgo-native-adapter.md](docs/dshgo-native-adapter.md) 与 [docs/community-phone-options.md](docs/community-phone-options.md)。
 
 ## 开发与测试
 
@@ -346,4 +346,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.9.14`：新增 **dsh-go 原生固定语音入口**（胶囊/状态条/面板，不依赖网页；面板可切换情感），并保留 **智能情感（LLM 按句判断，可选）**、零额外请求的 **BreezeBlue 规则自动情感**、**官方情感控制**（预设 + 表演说明 + 强度 1–10 + 语速/音量 + 流式 PCM），另有 DSH 官方 ASR 可选接入（`asrProvider: dsh`，仅整句定稿）、dsh-go 原生朗读、声纹面板（CAM++ 28MB）、7 套主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.15`：新增 **dsh-go 原生固定语音入口**（胶囊/状态条/「语音通话」面板，不依赖网页；面板可切换情感和云端/本地 TTS），并保留 **智能情感（LLM 按句判断，可选）**、零额外请求的 **BreezeBlue 规则自动情感**、**官方情感控制**（预设 + 表演说明 + 强度 1–10 + 语速/音量 + 流式 PCM），另有 DSH 官方 ASR 可选接入（`asrProvider: dsh`，仅整句定稿）、dsh-go 原生朗读、声纹面板（CAM++ 28MB）、7 套主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。

@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { pcm16ToWav } from '../lib/security.js'
-import { installDshGo, cleanForSpeech, splitForSpeech, concatWav, nextEmotionMode } from '../lib/dshgo.js'
+import { installDshGo, cleanForSpeech, splitForSpeech, concatWav, nextEmotionMode, nextTtsProvider } from '../lib/dshgo.js'
 
 let passed = 0
 let failed = 0
@@ -137,7 +137,8 @@ console.log('== 4. 桥接注册 ==')
 
   check('空消息返回 toast', () => {
     const out = reg.read({ message: '   \n  ' })
-    assert.ok(out.toast)
+    assert.equal(out.type, 'toast')
+    assert.match(out.text, /没有能朗读/)
   })
 }
 
@@ -155,14 +156,15 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
       ttsLabel: 'BreezeBlue 流式',
       voiceLabel: 'voc_smoke',
       emotionLabel: '智能（LLM）',
-      asrLabel: '本地流式',
+      asrLabel: 'dsh-go 官方语音输入',
       voiceprintLabel: '关',
     }),
     cycleEmotion: () => ({ ok: true, label: '智能（LLM）' }),
+    toggleProvider: () => ({ ok: true, label: 'BreezeBlue 流式' }),
   })
 
   check('胶囊点按打开原生面板', () => {
-    assert.deepEqual(reg['voice-open']({}, {}), { open: 'panel:voice-panel' })
+    assert.deepEqual(reg['voice-open']({}, {}), { type: 'open', page: 'panel:voice-panel' })
   })
   check('状态条推送语音状态', () => {
     assert.equal(reg.strip.id, 'voice-strip')
@@ -174,15 +176,27 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     assert.equal(emitted[0].tone, 'good')
     cancel()
   })
+  check('状态条区分自动情感/本地就绪', () => {
+    const emitFor = (status) => {
+      const { ctx: c, reg: r } = fakeCtx()
+      installDshGo(c, { speak: async () => wavOf(10), status: () => status })
+      const out = []
+      const cancel = r.strip.fn({}, (d) => out.push(d), { locale: 'zh' })
+      cancel()
+      return out[0].text
+    }
+    assert.equal(emitFor({ ready: true, provider: 'breeze', auto: true, smart: false }), '通话 · 自动情感')
+    assert.equal(emitFor({ ready: true, provider: 'local' }), '通话 · 就绪')
+  })
   check('未就绪时状态条/试听都给出明确提示', () => {
     const { ctx: c2, reg: r2 } = fakeCtx()
     installDshGo(c2, { speak: async () => wavOf(10), status: () => ({ ready: false }) })
     const emitted = []
     const cancel = r2.strip.fn({}, (d) => emitted.push(d), { locale: 'zh' })
-    assert.equal(emitted[0].text, '语音 · 未就绪')
+    assert.equal(emitted[0].text, '通话 · 未就绪')
     assert.equal(emitted[0].tone, 'warn')
     cancel()
-    assert.deepEqual(r2.panel.spec.actions.test(), { toast: '语音引擎未就绪，请先加载模型' })
+    assert.deepEqual(r2.panel.spec.actions.test(), { type: 'toast', text: '语音引擎未就绪，请先加载模型' })
   })
   check('面板视图/数据/动作注册', () => {
     assert.equal(reg.panel.id, 'voice-panel')
@@ -190,12 +204,15 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     assert.equal(view.type, 'stack')
     assert.ok(view.children.some((x) => x.type === 'keyValue'))
     assert.ok(view.children.some((x) => x.type === 'actions'))
+    assert.equal(view.children.find((x) => x.type === 'actions').items.length, 4)
     const data = []
     reg.panel.spec.data({}, (d) => data.push(d))
     assert.equal(data[0].ttsLabel, 'BreezeBlue 流式')
     assert.equal(data[0].emotionLabel, '智能（LLM）')
     assert.equal(data[0].voiceLabel, 'voc_smoke')
-    assert.ok(reg.panel.spec.actions.test && reg.panel.spec.actions.stop && reg.panel.spec.actions.refresh)
+    assert.ok(reg.panel.spec.actions.test && reg.panel.spec.actions.stop
+      && reg.panel.spec.actions.emotion && reg.panel.spec.actions.provider)
+    assert.equal(data[0].asrLabel, 'dsh-go 官方语音输入')
     // 视图里的每个 data 绑定都能在 data 对象里找到；动作 id 都有 handler。
     const bindings = []
     const actions = []
@@ -213,21 +230,33 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     for (const id of actions) assert.ok(typeof reg.panel.spec.actions[id] === 'function', `missing action ${id}`)
     assert.ok(Buffer.byteLength(JSON.stringify(view)) < 32 * 1024, 'view < 32 KiB')
   })
-  check('面板停止/刷新返回合法效果', () => {
+  check('无会话时停止只刷新，不返回无效 stop', () => {
+    assert.deepEqual(reg.panel.spec.actions.stop(), [{ type: 'refresh', id: 'voice-panel' }])
+  })
+  check('有会话时停止返回 audio/voice stop；结束事件后清标记', () => {
+    reg.read({ message: '先开始一段朗读' })
     const stop = reg.panel.spec.actions.stop()
     assert.ok(stop.some((e) => e.type === 'audio' && e.op === 'stop'))
-    assert.deepEqual(reg.panel.spec.actions.refresh(), { refresh: 'voice-panel' })
+    assert.ok(stop.some((e) => e.type === 'voice' && e.op === 'stop'))
+    reg.capability({}, { instance: 'read', event: 'audio.ended' })
+    assert.deepEqual(reg.panel.spec.actions.stop(), [{ type: 'refresh', id: 'voice-panel' }])
   })
   check('情感按钮三段循环：关 → 规则 → 智能 → 关', () => {
     assert.deepEqual(nextEmotionMode(false, false), { autoEmotion: true, smartEmotion: false })
     assert.deepEqual(nextEmotionMode(true, false), { autoEmotion: true, smartEmotion: true })
     assert.deepEqual(nextEmotionMode(true, true), { autoEmotion: false, smartEmotion: false })
   })
-  check('面板情感动作返回提示 + 刷新', () => {
+  check('通道按钮：云端/本地互切，未配置只能本地', () => {
+    assert.equal(nextTtsProvider('local', true), 'breeze')
+    assert.equal(nextTtsProvider('breeze', true), 'local')
+    assert.equal(nextTtsProvider('local', false), 'local')
+  })
+  check('面板通道动作只刷新', () => {
+    assert.deepEqual(reg.panel.spec.actions.provider(), [{ type: 'refresh', id: 'voice-panel' }])
+  })
+  check('面板情感动作只刷新，不弹 toast', () => {
     const out = reg.panel.spec.actions.emotion()
-    assert.ok(Array.isArray(out) && out.length === 2)
-    assert.match(out[0].toast, /自动情感：智能/)
-    assert.deepEqual(out[1], { refresh: 'voice-panel' })
+    assert.deepEqual(out, [{ type: 'refresh', id: 'voice-panel' }])
   })
   try {
     const effects = reg.panel.spec.actions.test()
