@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.11 — 2026-11-15
+
+- **BreezeBlue 自动情感**：新增 `lib/tts/emotion.js`，按每句 TTS 文本的常见情绪词、语气词和
+  标点判断 `开心/难过/生气/惊讶/紧张/温柔/俏皮/认真/自然`，自动映射到
+  `instructions + guidance_scale + speed`，再随该句发给 Breeze。
+  - 纯本地规则，不额外调用 LLM，不增加首字延迟；无明显信号时用自然语气，避免过度表演。
+  - `breezeAutoEmotion: true` 开启；开启后忽略手动表演说明/预设/滑杆，关闭后恢复。
+  - 语音 API 面板新增「情感模式 · 自动情感 开/关」；状态与 `tts-api.json` 持久化。
+  - 新增 `test/emotion-smoke.mjs`（12/0），覆盖 9 类语气与标签清洗；`breeze-smoke` 增加
+    单次请求覆盖静态情感的断言（15/0），`tts-api-smoke` 增加 autoEmotion 持久化断言。
+  - 实测自动链路：`太好了，我终于成功了！` → 开心 2.12s；`对不起，我要走了……` → 难过 3.29s。
+- 版本 0.9.11；npm 发布仍待账号限制解除，使用 GitHub Release tarball。
+
 ## 0.9.10 — 2026-11-14
 
 - **BreezeBlue 官方情感控制**：`instructions`（情境/意图/情绪/节奏）+ `voice_settings.guidance_scale`

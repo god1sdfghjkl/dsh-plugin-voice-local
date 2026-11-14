@@ -96,6 +96,33 @@ try {
   globalThis.fetch = realFetch
 }
 
+console.log('== 自动情感按句覆盖 ==')
+try {
+  let sent = null
+  globalThis.fetch = async (_url, init) => {
+    sent = JSON.parse(init.body)
+    return {
+      ok: true,
+      body: {
+        getReader: () => {
+          let done = false
+          return { read: async () => (done ? { done: true } : (done = true, { value: pcmChunk(1, 1), done: false })) }
+        },
+      },
+    }
+  }
+  const b = new BreezeTts({
+    apiKey: 'brz_secret', voiceId: 'voc_x',
+    instructions: '固定说明', guidanceScale: 1, speed: 1,
+  })
+  await b.synth('太好了！', { instructions: '自动：开心', guidanceScale: 2.2, speed: 1.05 })
+  check('override instructions', () => assert.equal(sent.instructions, '自动：开心'))
+  check('override guidance', () => assert.equal(sent.voice_settings.guidance_scale, 2.2))
+  check('override speed', () => assert.equal(sent.voice_settings.speed, 1.05))
+} finally {
+  globalThis.fetch = realFetch
+}
+
 console.log('== 错误处理 ==')
 try {
   globalThis.fetch = async () => ({

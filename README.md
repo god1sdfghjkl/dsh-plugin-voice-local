@@ -17,6 +17,7 @@
 - **全屏通话界面**：说话 → 停顿约 0.9s 自动发送 → 回复流式字幕 + 语音朗读 → 开口可打断。
 - **通话口吻**：通话期间自动注入“像正常人说话”的固定规则（口语、短句、不列清单、不输出 Markdown/括号动作/AI 套话），挂断后恢复默认书面风格；配置 `callPersona: false` 可关闭。
 - **BreezeBlue 流式 TTS（可选）**：设置 `ttsProvider: "breeze"`，填 API Key / `voice_id`，接 `/v1/text-to-speech/{voice_id}/stream` 的 24 kHz PCM 流，边生成边播；覆盖层「语音 API 设置」可保存/试听。没有 Key 自动回退本地 TTS。
+- **自动情感（可选）**：开启后按每句话的文字自动判断开心/难过/生气/惊讶/温柔/俏皮/认真/紧张/自然，分别套用 Breeze 的 `instructions`、`guidance_scale` 和 `speed`；纯本地规则，不额外调用 LLM，不明显增加首字延迟。
 - **DSH 官方 ASR（可选）**：`asrProvider: "dsh"` 走官方 `speechToText`（本地 SenseVoice 或云端 provider）；官方只有整句定稿、没有流式 partial，默认仍用本插件的边说边出字。
 - **7 套背景主题**：暗色 4 套（夜色苔绿 / 深夜靛蓝 / 暗夜梅紫 / 暖夜琥珀）+ 亮色 3 套（晨光纸白 / 暖沙米色 / 静谧天蓝）。选择立即生效并记忆；下拉框、字幕、球体配色一起切换。
 - **可换模型**：TTS / ASR 都是模型注册表——往目录里丢模型即可出现，支持热切换，不重启宿主。
@@ -54,7 +55,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.10.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.11.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -148,6 +149,7 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | `breezeModel` / `breezeLanguage` / `breezeInstructions` | `''` / `zh` / `''` | BreezeBlue 模型 id、语言、表演说明 |
 | `breezeGuidance` / `breezeSpeed` / `breezeVolume` | `1` / `1` / `1` | 情感贴合强度（1–10）、语速（0.5–2×）、音量（0.01–2×） |
 | `breezeSpeakerBoost` | `false` | 是否启用 speaker boost（与高强度 instructions 同用时官方会忽略） |
+| `breezeAutoEmotion` | `false` | 按每句文字自动选择情感；开启后忽略手动说明/预设 |
 | `asrProvider` | `local` | `local`（本插件流式）或 `dsh`（官方 speechToText，仅整句定稿） |
 | `asrLanguage` | `zh` | 官方 ASR 的语言提示 |
 | `voiceprintEnabled` | `false` | 声纹锁开关（也可在界面里切） |
@@ -235,6 +237,20 @@ Content-Type: application/json
 
 面板里的「情感预设」（自然/温柔/开心/平静/认真/撒娇）会自动填好说明、强度和语速，可再手改。
 
+### 自动情感
+
+打开「情感模式 → 自动情感 · 开」后，插件按**每一句 TTS 文本**做本地规则判断，选中一组
+`instructions / guidance_scale / speed`，再发给 Breeze。覆盖：
+
+`开心 / 难过 / 生气 / 惊讶 / 紧张 / 温柔 / 俏皮 / 认真 / 自然`
+
+判断依据是常见情绪词、标点（感叹号、省略号、连续问号）和语气词；没有明显信号时用「自然」，
+不会为了效果强行夸张。纯本地规则，不额外调用 LLM，因此不增加首字延迟。
+
+自动情感和手动说明/强度/语速互斥：自动开时忽略「表演说明 / 情感强度 / 语速」，
+但「音量」仍按面板滑杆；关掉自动后恢复全部手动参数。要更细的语义判断，可以后续接一次 LLM 生成
+instructions，但会增加延迟。
+
 ![语音 API 设置](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@main/docs/images/voice-api-panel.png)
 
 配置方式（二选一）：
@@ -320,4 +336,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.9.10`：新增 **BreezeBlue 官方情感控制**（情感预设 + 表演说明 + 强度 1–10 + 语速/音量 + 流式 PCM）与 **DSH 官方 ASR 可选接入**（`asrProvider: dsh`，仅整句定稿）；另有 dsh-go 原生朗读、声纹面板（CAM++ 28MB）、7 套主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.11`：新增 **BreezeBlue 自动情感**（按每句文字自动选语气）和 **官方情感控制**（预设 + 表演说明 + 强度 1–10 + 语速/音量 + 流式 PCM），另有 DSH 官方 ASR 可选接入（`asrProvider: dsh`，仅整句定稿）、dsh-go 原生朗读、声纹面板（CAM++ 28MB）、7 套主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
