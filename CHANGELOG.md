@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.12 — 2026-11-15
+
+- **智能情感（可选，社区方案）**：在关键词规则之上增加 LLM 按句判断。参考
+  `junarch/voice_for_dsh` 的「三行输出」做法，让 DSH 主模型返回
+  `emotion + intensity + instruction`，再映射到 Breeze 的 `instructions + guidance_scale`。
+  - **dsh-go 原生朗读专门适配**：原生界面没有网页端 `voice=1` SSE，`llm/stream` tap 现在
+    无论有没有语音客户端都记录主模型路由；`media` 一次产出整段 WAV，因此按整条消息只算
+    一次表演说明，再让所有分段共用（8 段不再等 8 次 LLM）。
+  - 面板新增「智能判断 · 智能情感（LLM）开/关」，默认关；开启时每句多一次很小的模型请求。
+  - 预取下一句的表演说明：当前句播放时生成下一句，首句之后基本不增加等待。
+  - 2.2s 超时、按句缓存、失败自动回退关键词规则；空响应/坏 JSON 不会打断朗读。
+  - 内部请求不会触发 `llm/stream` 的自动朗读（避免自己读自己）。
+  - `breezeSmartEmotion` / `tts-api.json` 持久化；`GET/POST /tts/api` 与 `/status` 返回状态。
+  - `test/emotion-smoke.mjs` 增加 5 个 JSON 解析/钳制断言（17/0）；`tts-api-smoke` 增加
+    `smartEmotion` 持久化断言。
+  - 新增 `test/smart-emotion-smoke.mjs`：假 LLM + 假 Breeze 流端到端验证
+    「主模型 JSON → `voice_settings`」，7/0。
+  - `test/dshgo-smoke.mjs` 增加「多段只算一次情感、每段复用同一个 style」断言。
+
 ## 0.9.11 — 2026-11-15
 
 - **BreezeBlue 自动情感**：新增 `lib/tts/emotion.js`，按每句 TTS 文本的常见情绪词、语气词和

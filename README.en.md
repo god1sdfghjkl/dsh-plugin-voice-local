@@ -26,6 +26,9 @@ Local full-duplex voice for **DeepSeek Harness (DSH)**: pluggable TTS + streamin
 - **Auto emotion (optional)**: per sentence, local keyword/punctuation rules choose happy, sad,
   angry, surprised, nervous, tender, playful, serious or neutral, then map that to Breeze
   `instructions`, `guidance_scale` and `speed`. No extra LLM call, so no added first-audio latency.
+  An opt-in “Smart emotion” toggle additionally asks the main DSH model for a three-field JSON
+  (`emotion / intensity / instruction`), prefetches the next sentence, caches results, and falls
+  back to the keyword rules on timeout or bad output.
 - **DSH official ASR (optional)**: `asrProvider: "dsh"` uses the host `ctx.speechToText` service
   (official local SenseVoice or a cloud provider). It is whole-utterance final-only, so live
   partial captions are lost; the default `local` keeps streaming ASR.
@@ -67,7 +70,7 @@ Install the tarball from the DSH plugin page, or download it from the
 [GitHub Releases](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases) until the npm package is out:
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.11.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.12.tgz
 ```
 
 Refresh the host page after installing because the client bundle is cached.

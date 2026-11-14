@@ -110,10 +110,11 @@ export function installDshGo(ctx, { speak, cancel, base }) {
 
 ```js
 installDshGo(ctx, {
-  speak: async (text) => {
-    const audio = await engine.synth(text, cfg.speed)
+  speak: async (text, opts) => {
+    const audio = await synthAudio(text, opts) // Breeze / 本地引擎共用
     return pcm16ToWav(audio.pcm, audio.sampleRate || cfg.sr)
   },
+  resolveStyle: (text) => autoEmotionStyle(text),
   cancel: () => tts.cancel(),
 })
 ```
@@ -132,6 +133,16 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
 
 16 kHz/44.1 kHz 单声道 16bit，16 MiB 约能放 95 秒（44.1k）或 8 分钟（16k），
 一般回复远小于这个上限。
+
+## 情感（0.9.12）
+
+- 网页端是逐句流式播放，可以在当前句播放时预取下一句的表演说明（`tts.pump`）。
+- dsh-go 的 `media` 要等**整段 WAV** 合成完才交给 App，没有逐句预取的机会；所以适配层
+  改为先按整条消息调用一次 `resolveStyle(text)`，再把同一个 `style` 传给每个分段的
+  `speak(chunk, { style })`。8 段只多一次 LLM 小请求，而不是 8 次。
+- dsh-go 原生界面没有网页端 `voice=1` SSE，但 `llm/stream` tap 现在无论有没有语音客户端
+  都会记录主模型的 `provider/model`；智能情感因此能在原生「朗读」里沿用同一个主模型。
+- 规则模式（`breezeSmartEmotion=false`）零额外 LLM；智能模式失败/超时回退规则，不阻断朗读。
 
 ## ASR 怎么接
 

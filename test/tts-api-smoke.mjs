@@ -83,6 +83,7 @@ try {
     volume: 1.2,
     speakerBoost: true,
     autoEmotion: true,
+    smartEmotion: true,
     asrProvider: 'dsh',
     asrLanguage: 'zh',
   })
@@ -98,10 +99,12 @@ try {
   ok(saved.guidanceScale === 2.5 && saved.speed === 1.1 && saved.volume === 1.2, '文件保存情感参数', saved)
   ok(saved.speakerBoost === true, '文件保存 speakerBoost', saved)
   ok(saved.autoEmotion === true, '文件保存 autoEmotion', saved)
+  ok(saved.smartEmotion === true, '文件保存 smartEmotion', saved)
 
   res = await call(state, '/voice-local/tts/api', 'GET')
   ok(res.json?.breeze?.hasKey === true, 'GET 报告 hasKey')
   ok(res.json?.autoEmotion === true, 'GET 返回 autoEmotion', res.json)
+  ok(res.json?.smartEmotion === true, 'GET 返回 smartEmotion', res.json)
   ok(res.json?.breeze?.guidanceScale === 2.5, 'GET 返回情感强度', res.json?.breeze)
   ok(res.json?.breeze?.speed === 1.1, 'GET 返回语速', res.json?.breeze)
   ok(!res.text.includes('brz_smoke_secret_value'), 'GET 不回显完整 Key', res.text)

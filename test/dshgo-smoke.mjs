@@ -116,18 +116,29 @@ console.log('== 4. 桥接注册 ==')
 {
   const { ctx, reg } = fakeCtx()
   const spoken = []
-  const speak = async (text) => { spoken.push(text); return wavOf(60) }
-  installDshGo(ctx, { speak, ensureReady: async () => {} })
-  const effects = reg.read({ message: '第一句。第二句。第三句。' })
+  const styles = []
+  let resolveCalls = 0
+  const speak = async (text, opts = {}) => { spoken.push(text); styles.push(opts.style); return wavOf(60) }
+  installDshGo(ctx, {
+    speak,
+    ensureReady: async () => {},
+    resolveStyle: async () => {
+      resolveCalls++
+      return { instructions: '语气轻快，句尾上扬', guidanceScale: 3.25, speed: 1 }
+    },
+  })
+  const effects = reg.read({ message: '第一句。第二句。'.repeat(250) })
   const key = effects.find((e) => e.type === 'audio').key
   await (async () => {
     try {
       const out = await reg.media({}, { key, signal: new AbortController().signal })
       assert.equal(out.contentType, 'audio/wav')
       assert.equal(out.body.toString('ascii', 0, 4), 'RIFF')
-      assert.equal(spoken.length, 1)
+      assert.ok(spoken.length > 1, `expected multiple chunks, got ${spoken.length}`)
+      assert.equal(resolveCalls, 1, '整条消息只算一次情感')
+      for (const s of styles) assert.equal(s?.guidanceScale, 3.25, '每段都复用同一个情感')
       passed++
-      console.log('  ✓ media 合成并返回 WAV')
+      console.log('  ✓ media 合成并返回 WAV（多段共用一次情感）')
     } catch (e) {
       failed++
       console.error(`  ✗ media 合成并返回 WAV: ${e?.message || e}`)

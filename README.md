@@ -17,7 +17,7 @@
 - **全屏通话界面**：说话 → 停顿约 0.9s 自动发送 → 回复流式字幕 + 语音朗读 → 开口可打断。
 - **通话口吻**：通话期间自动注入“像正常人说话”的固定规则（口语、短句、不列清单、不输出 Markdown/括号动作/AI 套话），挂断后恢复默认书面风格；配置 `callPersona: false` 可关闭。
 - **BreezeBlue 流式 TTS（可选）**：设置 `ttsProvider: "breeze"`，填 API Key / `voice_id`，接 `/v1/text-to-speech/{voice_id}/stream` 的 24 kHz PCM 流，边生成边播；覆盖层「语音 API 设置」可保存/试听。没有 Key 自动回退本地 TTS。
-- **自动情感（可选）**：开启后按每句话的文字自动判断开心/难过/生气/惊讶/温柔/俏皮/认真/紧张/自然，分别套用 Breeze 的 `instructions`、`guidance_scale` 和 `speed`；纯本地规则，不额外调用 LLM，不明显增加首字延迟。
+- **自动情感（可选）**：开启后按每句话的文字自动判断开心/难过/生气/惊讶/温柔/俏皮/认真/紧张/自然，分别套用 Breeze 的 `instructions`、`guidance_scale` 和 `speed`；默认用零额外请求的本地规则，也可打开「智能情感（LLM）」让主模型按句生成更贴语义的表演说明（预取下一句、超时/坏输出回退规则）。
 - **DSH 官方 ASR（可选）**：`asrProvider: "dsh"` 走官方 `speechToText`（本地 SenseVoice 或云端 provider）；官方只有整句定稿、没有流式 partial，默认仍用本插件的边说边出字。
 - **7 套背景主题**：暗色 4 套（夜色苔绿 / 深夜靛蓝 / 暗夜梅紫 / 暖夜琥珀）+ 亮色 3 套（晨光纸白 / 暖沙米色 / 静谧天蓝）。选择立即生效并记忆；下拉框、字幕、球体配色一起切换。
 - **可换模型**：TTS / ASR 都是模型注册表——往目录里丢模型即可出现，支持热切换，不重启宿主。
@@ -55,7 +55,7 @@
 **方式 B：CLI**
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.11.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.12.tgz
 # 或从 npm
 dsh plugin --profile <profile> add dsh-plugin-voice-local
 ```
@@ -150,6 +150,7 @@ ASR 的 `model.json` 额外支持 `role`（`streaming` / `final`）、`type`（�
 | `breezeGuidance` / `breezeSpeed` / `breezeVolume` | `1` / `1` / `1` | 情感贴合强度（1–10）、语速（0.5–2×）、音量（0.01–2×） |
 | `breezeSpeakerBoost` | `false` | 是否启用 speaker boost（与高强度 instructions 同用时官方会忽略） |
 | `breezeAutoEmotion` | `false` | 按每句文字自动选择情感；开启后忽略手动说明/预设 |
+| `breezeSmartEmotion` | `false` | 自动情感开启时，再用 DSH 主模型按句生成表演说明；失败回退规则 |
 | `asrProvider` | `local` | `local`（本插件流式）或 `dsh`（官方 speechToText，仅整句定稿） |
 | `asrLanguage` | `zh` | 官方 ASR 的语言提示 |
 | `voiceprintEnabled` | `false` | 声纹锁开关（也可在界面里切） |
@@ -247,9 +248,18 @@ Content-Type: application/json
 判断依据是常见情绪词、标点（感叹号、省略号、连续问号）和语气词；没有明显信号时用「自然」，
 不会为了效果强行夸张。纯本地规则，不额外调用 LLM，因此不增加首字延迟。
 
+需要更懂反讽、隐喻和上下文的语气时，可再打开「智能判断 → 智能情感（LLM）」。它参考社区
+`junarch/voice_for_dsh` 的做法，让 DSH 主模型对每一句输出 `emotion / intensity / instruction`
+三行 JSON，再映射成 Breeze 的 `instructions + guidance_scale`：
+
+- 默认关；开启后每句多一次很小的模型请求（约几十到一百多 token）。
+- 当前句播放时预取下一句的表演说明，所以只有首句可能略慢。
+- 2.2 秒超时、按句缓存；超时、空响应、坏 JSON 都自动回退关键词规则，不会中断朗读。
+- 插件内部这次请求不会触发 `llm/stream` 的自动朗读，避免“自己读自己”。
+
 自动情感和手动说明/强度/语速互斥：自动开时忽略「表演说明 / 情感强度 / 语速」，
-但「音量」仍按面板滑杆；关掉自动后恢复全部手动参数。要更细的语义判断，可以后续接一次 LLM 生成
-instructions，但会增加延迟。
+但「音量」仍按面板滑杆；关掉自动后恢复全部手动参数。智能情感只是自动情感的更细判断，
+关掉自动情感时它也不会生效。
 
 ![语音 API 设置](https://testingcf.jsdelivr.net/gh/god1sdfghjkl/dsh-plugin-voice-local@main/docs/images/voice-api-panel.png)
 
@@ -291,7 +301,7 @@ curl -X POST http://127.0.0.1:57885/voice-local/tts/api \
 - 浏览器/手机端**现在就能用**：`client.js` 已做响应式（安全区、≥44px 触控、窄屏顶栏、矮窗横屏）。
 - 手机浏览器访问需要 **HTTPS 或 localhost** 才能拿到麦克风；局域网 `http://192.168.x.x` 会被 Chrome 拒绝。推荐 Tailscale / Caddy 反代或 `dsh web` 的本机模式。
 - **dshgo（DSH 口袋）**：Android App + 局域网反代插件（[xiazhi88/dshgo](https://github.com/xiazhi88/dshgo)）。App 的 WebView 主动拒绝网页麦克风（`onPermissionRequest` 一律 `deny`），所以 App 内不能跑全双工；插件检测到非安全上下文会自动进入**手机朗读模式**（App 自带语音输入 + 本地 TTS 朗读回复）；窄屏右下角还有独立「语音」浮动入口，手机浏览器可书签 `/voice-local/mobile` 直达语音。想要全双工，用手机浏览器 + Tailscale HTTPS 打开 dshgo 入口，或 fork App 放行音频权限。详见 [docs/dshgo.md](docs/dshgo.md)；手机本机跑模型的可行性见 [docs/phone-local.md](docs/phone-local.md)。
-- 开源手机端 **dsh-go**（[ccch1mneyyy/dsh-go](https://github.com/ccch1mneyyy/dsh-go)）是另一套：App 内置 Linux + Node + **本机引擎**，DSH 直接跑在手机上，插件装到“本机”。本插件 0.9.8 起随包带 `dshGo` 原生清单：长按助手回复 →「朗读」，App 原生播放；ASR 用 dsh-go 官方本地 SenseVoice。这样模型在手机跑、不需要电脑；桌面/网页模式仍走原覆盖层。详见 [docs/dshgo-native-adapter.md](docs/dshgo-native-adapter.md) 与 [docs/community-phone-options.md](docs/community-phone-options.md)。
+- 开源手机端 **dsh-go**（[ccch1mneyyy/dsh-go](https://github.com/ccch1mneyyy/dsh-go)）是另一套：App 内置 Linux + Node + **本机引擎**，DSH 直接跑在手机上，插件装到“本机”。本插件 0.9.8 起随包带 `dshGo` 原生清单：长按助手回复 →「朗读」，App 原生播放；ASR 用 dsh-go 官方本地 SenseVoice。这样模型在手机跑、不需要电脑；桌面/网页模式仍走原覆盖层。0.9.12 的智能情感也专门适配了原生朗读：没有网页端 SSE 时也会记住主模型路由，整条消息只生成一次情感、所有分段共用。详见 [docs/dshgo-native-adapter.md](docs/dshgo-native-adapter.md) 与 [docs/community-phone-options.md](docs/community-phone-options.md)。
 
 ## 开发与测试
 
@@ -336,4 +346,4 @@ node scripts/split-model.mjs --file <大文件> --out-dir <分段目录> --base-
 
 ## 版本
 
-当前 `0.9.11`：新增 **BreezeBlue 自动情感**（按每句文字自动选语气）和 **官方情感控制**（预设 + 表演说明 + 强度 1–10 + 语速/音量 + 流式 PCM），另有 DSH 官方 ASR 可选接入（`asrProvider: dsh`，仅整句定稿）、dsh-go 原生朗读、声纹面板（CAM++ 28MB）、7 套主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前 `0.9.12`：新增 **智能情感（LLM 按句判断，可选）**，并保留零额外请求的 **BreezeBlue 规则自动情感**、**官方情感控制**（预设 + 表演说明 + 强度 1–10 + 语速/音量 + 流式 PCM），另有 DSH 官方 ASR 可选接入（`asrProvider: dsh`，仅整句定稿）、dsh-go 原生朗读、声纹面板（CAM++ 28MB）、7 套主题、模型下载器与手机响应式。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
