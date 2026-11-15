@@ -26,7 +26,7 @@ function check(name, fn) {
 }
 
 function fakeCtx() {
-  const reg = { read: null, media: null, capability: null, strip: null, panel: null, sessionEvent: null }
+  const reg = { read: null, media: null, capability: null, strip: null, panel: null, sessionEvent: null, micro: null }
   const ctx = {
     on(name, fn) { if (name === 'session/event') reg.sessionEvent = fn },
     inject(names, cb) {
@@ -36,6 +36,7 @@ function fakeCtx() {
         dshGo: {
           on(id, fn) { reg[id] = fn },
           media(id, fn) { reg.media = fn },
+          micro(id, spec) { reg.micro = { id, spec } },
           strip(id, fn) { reg.strip = { id, fn } },
           panel(id, spec) { reg.panel = { id, spec } },
           onCapability(fn) { reg.capability = fn },
@@ -63,6 +64,8 @@ console.log('== 0. 清单 ==')
     ...c.panels.map((x) => x.id),
     ...c['message.actions'].map((x) => x.id),
     ...c.media.map((x) => x.id),
+    ...c.micro.map((x) => x.id),
+    ...c.overlays.map((x) => x.id),
   ]
   check('原生入口/状态条/面板已声明', () => {
     assert.equal(c['composer.actions'][0].id, 'voice-open')
@@ -70,6 +73,11 @@ console.log('== 0. 清单 ==')
     assert.equal(c.panels[0].id, 'voice-panel')
     assert.equal(c.panels[0].presentation, 'sheet')
     assert.ok(c.panels[0].placement.includes('plugin'))
+    assert.ok(manifest.capabilities.includes('micro'))
+    assert.ok(manifest.capabilities.includes('overlay'))
+    assert.equal(c.micro[0].id, 'caption')
+    assert.equal(c.overlays[0].id, 'subtitle')
+    assert.equal(c.overlays[0].channel, 'caption')
   })
   check('贡献 id 全局唯一', () => {
     assert.equal(new Set(ids).size, ids.length, ids.join(','))
@@ -137,6 +145,9 @@ console.log('== 4. 桥接注册 ==')
     assert.ok(audio.key)
     const voice = out.find((e) => e.type === 'voice')
     assert.equal(voice.op, 'start')
+    const overlay = out.find((e) => e.type === 'overlay')
+    assert.equal(overlay.op, 'show')
+    assert.equal(overlay.id, 'subtitle')
   })
 
   check('空消息返回 toast', () => {
@@ -190,6 +201,10 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     assert.equal(emitted[0].tone, 'warn')
     cancel()
     assert.deepEqual(r2.panel.spec.actions.test(), { type: 'toast', text: '语音引擎未就绪，请先加载模型' })
+  })
+  check('字幕通道已注册', () => {
+    assert.equal(reg.micro.id, 'caption')
+    assert.equal(typeof reg.micro.spec.data, 'function')
   })
   check('面板视图：主操作 3 个、通道/情感用单选组', () => {
     assert.equal(reg.panel.id, 'voice-panel')
@@ -291,6 +306,23 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
   } catch (e) {
     failed++
     console.error(`  ✗ 面板试听合成 WAV: ${e?.message || e}`)
+  }
+  try {
+    const emitted = []
+    const cancel = reg.micro.spec.data({}, (d) => emitted.push(d))
+    const effects = reg.panel.spec.actions.test()
+    const audio = effects.find((e) => e.type === 'audio')
+    await reg.media({}, { key: audio.key, signal: new AbortController().signal })
+    await new Promise((r) => setTimeout(r, 260))
+    assert.ok(emitted.length > 0, '字幕至少推一次')
+    assert.ok(emitted.every((d) => typeof d.text === 'string' && d.text.length > 0))
+    assert.ok(emitted.every((d) => d.progress >= 0 && d.progress <= 1))
+    cancel()
+    passed++
+    console.log('  ✓ 朗读时推送悬浮字幕')
+  } catch (e) {
+    failed++
+    console.error(`  ✗ 朗读时推送悬浮字幕: ${e?.message || e}`)
   }
 }
 

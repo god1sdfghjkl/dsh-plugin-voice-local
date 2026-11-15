@@ -70,7 +70,7 @@ Install the tarball from the DSH plugin page, or download it from the
 [GitHub Releases](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases) until the npm package is out:
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.19.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.20.tgz
 ```
 
 Refresh the host page after installing because the client bundle is cached.
@@ -123,6 +123,8 @@ read-latest / preview / stop, and channel/emotion are explicit local/cloud and
 off/rules/smart choices. 0.9.18 turns channel/emotion into checked lists, so the
 active choice is visible at a glance; 0.9.19 switches to native single-choice
 options with descriptions and a bound selected state, and adds the plugin-page entry.
+0.9.20 adds native floating captions: while a reply is read, the current sentence and
+progress appear under the conversation header (dsh-go micro/overlay capabilities).
 Voice input remains dsh-go's official mic/SenseVoice. See
 [docs/dshgo-native-adapter.md](docs/dshgo-native-adapter.md).
 

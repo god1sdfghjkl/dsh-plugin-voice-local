@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.9.20 — 2026-11-15
+
+- **新增 dsh-go 原生悬浮字幕**（参考官方 `dsh-go-example-readaloud` 与 `docs/plugins/voice.md`）：
+  - 清单增加 `micro: caption`、`overlays: subtitle`，能力增加 `micro` / `overlay`；
+  - 朗读/试听/念最新时返回 `overlay.show`，对话顶栏下浮出一行字幕；
+  - 用 `ctx.dshGo.micro('caption')` 按约 10 Hz 推送 `{ text, progress }`，
+    字幕按实际 WAV 时长推进，读到哪句显示哪句；
+  - 播完、被停止、用户开口、用户点 × 关掉字幕时自动停止推送；
+  - 字幕静态占位文字「正在准备朗读…」，合成完成后切换为实时句子。
+- 字幕按句切分（≤80 字一段，长句再按标点/60 字切），单条 ≤240 字，
+  不会把整条长回复塞进悬浮条。
+- `test/dshgo-smoke.mjs` 增加字幕通道/overlay 效果/字幕推送断言，**25/0**；
+  `npm run test:ci` 全绿。
+- 官方 `manifest` / `view` schema 通过；官方 effects 校验
+  `open / read / test / stop / setProvider / setEmotion / readLatest` 全部 0 violation。
+
 ## 0.9.19 — 2026-11-15
 
 - **通道/情感从列表改成原生单选组 `options`**（继续看 dsh-go 官方示例与社区代码）：
