@@ -155,6 +155,7 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     status: () => ({
       ready: true,
       provider: 'breeze',
+      breezeReady: true,
       auto: true,
       smart: true,
       ttsLabel: 'BreezeBlue 流式',
@@ -189,15 +190,17 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     cancel()
     assert.deepEqual(r2.panel.spec.actions.test(), { type: 'toast', text: '语音引擎未就绪，请先加载模型' })
   })
-  check('面板视图：主操作 3 个、通道 2 个、云端情感 3 个', () => {
+  check('面板视图：主操作 3 个、通道/情感用带勾选的列表', () => {
     assert.equal(reg.panel.id, 'voice-panel')
     const view = reg.panel.spec.view({ sessionId: 's1' }, { locale: 'zh' })
     assert.equal(view.type, 'stack')
     const actionRows = view.children.filter((x) => x.type === 'actions')
-    assert.equal(actionRows.length, 3)
+    assert.equal(actionRows.length, 1)
     assert.deepEqual(actionRows[0].items.map((x) => x.label), ['念最新', '试听', '停止'])
-    assert.deepEqual(actionRows[1].items.map((x) => x.label), ['本地', '云端'])
-    assert.deepEqual(actionRows[2].items.map((x) => x.label), ['关', '规则', '智能'])
+    const lists = view.children.filter((x) => x.type === 'list')
+    assert.equal(lists.length, 2)
+    assert.deepEqual(lists[0].items.map((x) => x.title), ['本地模型', 'Breeze 云端'])
+    assert.deepEqual(lists[1].items.map((x) => x.title), ['关', '规则', '智能'])
     assert.equal(view.children.find((x) => x.type === 'keyValue').items.length, 2)
     assert.ok(view.children.some((x) => x.type === 'callout'))
   })
@@ -210,6 +213,9 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     assert.equal(data[0].voiceLabel, 'voc_smoke')
     assert.equal(data[0].latestLabel, '暂无')
     assert.equal(data[0].headline, '语音已就绪 · 云端')
+    assert.equal(data[0].breezeMark, '✓ 正在用')
+    assert.equal(data[0].localMark, '')
+    assert.equal(data[0].smartMark, '✓ 正在用')
     assert.ok(reg.panel.spec.actions.test && reg.panel.spec.actions.stop
       && reg.panel.spec.actions.readLatest && reg.panel.spec.actions.setProvider
       && reg.panel.spec.actions.setEmotion)

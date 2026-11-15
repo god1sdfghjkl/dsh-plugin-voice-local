@@ -70,7 +70,7 @@ Install the tarball from the DSH plugin page, or download it from the
 [GitHub Releases](https://github.com/god1sdfghjkl/dsh-plugin-voice-local/releases) until the npm package is out:
 
 ```bash
-dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.17.tgz
+dsh plugin --profile <profile> add ./dsh-plugin-voice-local-0.9.18.tgz
 ```
 
 Refresh the host page after installing because the client bundle is cached.
@@ -120,7 +120,8 @@ cloud BreezeBlue or local TTS, and fixes native effect/format diagnostics; 0.9.1
 panel as a native sheet over the conversation, returning to the strip/chat when dismissed;
 0.9.17 rebuilds the panel hierarchy: the idle strip collapses, the main actions are
 read-latest / preview / stop, and channel/emotion are explicit local/cloud and
-off/rules/smart choices.
+off/rules/smart choices. 0.9.18 turns channel/emotion into checked lists, so the
+active choice is visible at a glance.
 Voice input remains dsh-go's official mic/SenseVoice. See
 [docs/dshgo-native-adapter.md](docs/dshgo-native-adapter.md).
 
