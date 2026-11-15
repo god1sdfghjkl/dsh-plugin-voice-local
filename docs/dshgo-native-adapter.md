@@ -157,31 +157,25 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
   都会记录主模型的 `provider/model`；智能情感因此能在原生「朗读」里沿用同一个主模型。
 - 规则模式（`breezeSmartEmotion=false`）零额外 LLM；智能模式失败/超时回退规则，不阻断朗读。
 
-## 原生固定入口（0.9.13–0.9.16，A 方案）
+## 原生固定入口（0.9.13–0.9.17，A 方案）
 
 不做网页岛、不做可拖动，全部走 dsh-go 原生插槽：
 
 - **输入框胶囊「语音」**：`composer.actions` 的 `voice-open`；点按返回
   `{ open: 'panel:voice-panel' }`，打开原生面板。
-- **输入框上方状态条**：`composer.strip` 的 `voice-strip`；`ctx.dshGo.strip()` 每 15 秒
-  推送「通话 · 就绪 / Breeze / 自动情感 / 智能情感 / 未就绪」，点按同样打开面板。
-- **原生「语音通话」面板**：`panels` 的 `voice-panel`；顶部动态「语音通话已就绪 / 未就绪」，
-  中间「朗读通道 / 音色 / 语音输入 / 自动情感 / 状态」，按钮
-  「试听音色 / 停止朗读 / 情感 / 通道」（4 个，正好在上限内）。
-  - `presentation: "sheet"`：点状态条/胶囊/聊天页「插件」时以**弹层**盖在当前对话上，
-    关闭后回到聊天和状态条，不整页跳转；老 App 忽略该字段时仍按页打开。
-  - 「语音输入」明确显示 **dsh-go 官方语音输入**（App 自带麦克风/SenseVoice），不走插件的
-    `asrProvider`；
-  - 试听复用同一个 `media:speech` + `speak()` 链路，和长按「朗读」共用 audio/voice 会话；
-  - `stop` 先检查当前是否有活跃 audio/voice 会话；没有时只 `refresh`，避免桥接报
-    「没有协商实例」；
-  - `emotion` 按「关 → 关键词规则 → 智能（LLM）→ 关」循环，写回 `tts-api.json`，
-    成功只返回 `refresh`（不弹 toast，避开限流）；本地 TTS 下返回 toast；
-  - `provider` 在 BreezeBlue 云端和本地 TTS 之间切换并写回配置；未配置 Breeze 时保持本地；
-  - 所有成功动作返回显式 `{ type: 'refresh', id: 'voice-panel' }`，不再用简写。
+- **输入框上方状态条**：`composer.strip` 的 `voice-strip`。参考社区朗读插件
+  `鲸鲸朗读` 的做法，**空闲时收起**（`text: ''`），只在「正在合成…」「正在朗读…」
+  「语音未就绪」时出现，每秒刷新；入口仍保留在胶囊里。
+- **原生「语音通话」面板**：`panels` 的 `voice-panel`，`presentation: "sheet"`：
+  - 顶部一句状态：「语音已就绪 · 本地 / 云端」或「语音未就绪」；
+  - 主操作 **念最新 / 试听 / 停止**；「念最新」读本会话最近一条完整回复，
+    不用再长按消息；
+  - **朗读**：本地 / 云端两个明确选项，当前值写在上面一行；
+  - **自动情感**：关 / 规则 / 智能三个明确选项；本地 TTS 时整段隐藏，切到云端才出现；
+  - 底部只保留「音色 / 最近回复」两行和一句输入说明，不再堆技术状态行。
 - **语音输入仍用 dsh-go 自带麦克风**：插件不申请原生录音权限，也不假装能替用户按系统麦克风。
 - 面板视图只用 v1 组件（`stack / callout / text / keyValue / actions`），老 App 也能画；
-  849 B、5 个 keyValue、4 个按钮，远低于 32 KiB / 120 组件上限。
+  1189 B、3 个操作区（3+2+3 个按钮）、2 个 keyValue，远低于 32 KiB / 120 组件上限。
 - **边界**：原生协议没有插件可拖拽、可缩到屏幕角落的悬浮窗；`sheet` 是原生里最接近
   「展开/收起小窗」的形态。真正任意位置悬浮只能走 `shell.overlay` 网页岛（WebView，
   且原生麦克风仍归 App）或修改 dsh-go App。
@@ -189,13 +183,18 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
 对应的 `lib/dshgo.js` 注册：
 
 ```js
-ctx.dshGo.on('voice-open', () => ({ open: 'panel:voice-panel' }))
-ctx.dshGo.strip('voice-strip', (scope, emit) => emit({ text: '通话 · 就绪', icon: 'speaker' }))
-ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, emotion, provider } })
+ctx.dshGo.on('voice-open', () => ({ type: 'open', page: 'panel:voice-panel' }))
+ctx.dshGo.strip('voice-strip', (scope, emit) => emit({ text: busy ? '正在朗读…' : '', icon: 'speaker' }))
+ctx.dshGo.panel('voice-panel', {
+  view, data,
+  actions: { readLatest, test, stop, setProvider, setEmotion },
+})
 ```
 
-`test` 会调用 `startJob('你好，这是 dsh-go 原生语音试听。')`，App 再 GET `media:speech`；
+`test` 会调用 `startJob('你好，这是语音试听。')`，App 再 GET `media:speech`；
+`readLatest` 使用 `session/event` 记住的最近一条完整回复；
 `data` 里的绑定键与 `view` 中的 `{ $: 'data.*' }` 一一对应，冒烟测试会检查漏键。
+所有按钮成功只返回显式 `{ type: 'refresh', id: 'voice-panel' }`，不弹 toast，避开 App 限流。
 
 ## ASR 怎么接
 
@@ -234,7 +233,7 @@ ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, emotion, pro
 2. `node --check lib/index.js`、`client-smoke`、`host-smoke`、`voiceprint-smoke` 全绿。
 3. 桌面装包后网页模式无回归。
 4. 真机 dsh-go：装本机引擎 → 装本插件 → 输入框上方出现「语音」胶囊/状态条 →
-   点开原生面板 →「试听音色」出声 →「停止朗读」停住；长按回复「朗读」仍可用；网页模式仍完整。
+   点开原生面板 →「念最新」读最后一条回复 →「停止」停住；长按回复「朗读」仍可用；网页模式仍完整。
 
 ## 改动清单（最终）
 
@@ -254,14 +253,15 @@ ctx.dshGo.panel('voice-panel', { view, data, actions: { test, stop, emotion, pro
 
 `client.js`、引擎、路由、模型格式都不动。
 
-## 实现状态（0.9.16）
+## 实现状态（0.9.17）
 
 已落地：`package.json` 的 `dshGo`（`composer.actions` / `composer.strip` / `panels` /
 `message.actions` / `media`）、`lib/dshgo.js`、`lib/index.js` 的
-`installDshGo(ctx, { speak, ensureReady, resolveStyle, status, cycleEmotion })` 调用，以及
-`test/dshgo-smoke.mjs`（25/0）。
+`installDshGo(ctx, { speak, ensureReady, resolveStyle, status, setProvider, setEmotion })`
+调用，以及 `test/dshgo-smoke.mjs`（23/0）。
 
-- 长按「朗读」：多块 WAV 由 `concatWav()` 拼接；
-- 原生入口：胶囊 + 动态状态条 + 原生面板（试听/停止/情感/通道，sheet 弹层）；
-- 清单通过 dsh-go 官方 `manifest` schema，面板视图通过 `view` schema；
+- 长按「朗读」/ 面板「念最新」：多块 WAV 由 `concatWav()` 拼接；
+- 原生入口：胶囊 + 按需出现状态条 + 原生面板（念最新/试听/停止，本地/云端，
+  关/规则/智能；sheet 弹层）；
+- 清单通过 dsh-go 官方 `manifest` schema，面板视图通过 `view` schema（1189 B）；
 - 真机 dsh-go 的安装包发布后即可验证。

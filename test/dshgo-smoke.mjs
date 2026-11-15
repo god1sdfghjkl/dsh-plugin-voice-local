@@ -26,11 +26,13 @@ function check(name, fn) {
 }
 
 function fakeCtx() {
-  const reg = { read: null, media: null, capability: null, strip: null, panel: null }
+  const reg = { read: null, media: null, capability: null, strip: null, panel: null, sessionEvent: null }
   const ctx = {
+    on(name, fn) { if (name === 'session/event') reg.sessionEvent = fn },
     inject(names, cb) {
       assert.deepEqual(names, ['dshGo'])
       cb({
+        on(name, fn) { if (name === 'session/event') reg.sessionEvent = fn },
         dshGo: {
           on(id, fn) { reg[id] = fn },
           media(id, fn) { reg.media = fn },
@@ -146,6 +148,7 @@ console.log('== 4. 桥接注册 ==')
 console.log('== 5. 原生入口 / 状态条 / 面板 ==')
 {
   const { ctx, reg } = fakeCtx()
+  const calls = { provider: [], emotion: [] }
   installDshGo(ctx, {
     speak: async () => wavOf(60),
     ensureReady: async () => {},
@@ -160,67 +163,65 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
       asrLabel: 'dsh-go 官方语音输入',
       voiceprintLabel: '关',
     }),
-    cycleEmotion: () => ({ ok: true, label: '智能（LLM）' }),
-    toggleProvider: () => ({ ok: true, label: 'BreezeBlue 流式' }),
+    setProvider: (v) => { calls.provider.push(v); return { ok: true, label: v } },
+    setEmotion: (v) => { calls.emotion.push(v); return { ok: true, label: v } },
   })
 
   check('胶囊点按打开原生面板', () => {
     assert.deepEqual(reg['voice-open']({}, {}), { type: 'open', page: 'panel:voice-panel' })
   })
-  check('状态条推送语音状态', () => {
+  check('空闲时状态条自动收起，不占输入框上方', () => {
     assert.equal(reg.strip.id, 'voice-strip')
     const emitted = []
     const cancel = reg.strip.fn({}, (d) => emitted.push(d), { locale: 'zh' })
     assert.ok(emitted.length >= 1)
-    assert.match(emitted[0].text, /智能情感/)
-    assert.equal(emitted[0].icon, 'speaker')
-    assert.equal(emitted[0].tone, 'good')
+    assert.equal(emitted[0].text, '')
+    assert.equal(emitted[0].icon, undefined)
     cancel()
-  })
-  check('状态条区分自动情感/本地就绪', () => {
-    const emitFor = (status) => {
-      const { ctx: c, reg: r } = fakeCtx()
-      installDshGo(c, { speak: async () => wavOf(10), status: () => status })
-      const out = []
-      const cancel = r.strip.fn({}, (d) => out.push(d), { locale: 'zh' })
-      cancel()
-      return out[0].text
-    }
-    assert.equal(emitFor({ ready: true, provider: 'breeze', auto: true, smart: false }), '通话 · 自动情感')
-    assert.equal(emitFor({ ready: true, provider: 'local' }), '通话 · 就绪')
   })
   check('未就绪时状态条/试听都给出明确提示', () => {
     const { ctx: c2, reg: r2 } = fakeCtx()
     installDshGo(c2, { speak: async () => wavOf(10), status: () => ({ ready: false }) })
     const emitted = []
     const cancel = r2.strip.fn({}, (d) => emitted.push(d), { locale: 'zh' })
-    assert.equal(emitted[0].text, '通话 · 未就绪')
+    assert.equal(emitted[0].text, '语音未就绪')
     assert.equal(emitted[0].tone, 'warn')
     cancel()
     assert.deepEqual(r2.panel.spec.actions.test(), { type: 'toast', text: '语音引擎未就绪，请先加载模型' })
   })
-  check('面板视图/数据/动作注册', () => {
+  check('面板视图：主操作 3 个、通道 2 个、云端情感 3 个', () => {
     assert.equal(reg.panel.id, 'voice-panel')
-    const view = reg.panel.spec.view({}, { locale: 'zh' })
+    const view = reg.panel.spec.view({ sessionId: 's1' }, { locale: 'zh' })
     assert.equal(view.type, 'stack')
-    assert.ok(view.children.some((x) => x.type === 'keyValue'))
-    assert.ok(view.children.some((x) => x.type === 'actions'))
-    assert.equal(view.children.find((x) => x.type === 'actions').items.length, 4)
+    const actionRows = view.children.filter((x) => x.type === 'actions')
+    assert.equal(actionRows.length, 3)
+    assert.deepEqual(actionRows[0].items.map((x) => x.label), ['念最新', '试听', '停止'])
+    assert.deepEqual(actionRows[1].items.map((x) => x.label), ['本地', '云端'])
+    assert.deepEqual(actionRows[2].items.map((x) => x.label), ['关', '规则', '智能'])
+    assert.equal(view.children.find((x) => x.type === 'keyValue').items.length, 2)
+    assert.ok(view.children.some((x) => x.type === 'callout'))
+  })
+  check('面板数据/动作注册完整，绑定无漏键', () => {
+    const view = reg.panel.spec.view({ sessionId: 's1' }, { locale: 'zh' })
     const data = []
-    reg.panel.spec.data({}, (d) => data.push(d))
+    reg.panel.spec.data({ sessionId: 's1' }, (d) => data.push(d))
     assert.equal(data[0].ttsLabel, 'BreezeBlue 流式')
     assert.equal(data[0].emotionLabel, '智能（LLM）')
     assert.equal(data[0].voiceLabel, 'voc_smoke')
+    assert.equal(data[0].latestLabel, '暂无')
+    assert.equal(data[0].headline, '语音已就绪 · 云端')
     assert.ok(reg.panel.spec.actions.test && reg.panel.spec.actions.stop
-      && reg.panel.spec.actions.emotion && reg.panel.spec.actions.provider)
-    assert.equal(data[0].asrLabel, 'dsh-go 官方语音输入')
+      && reg.panel.spec.actions.readLatest && reg.panel.spec.actions.setProvider
+      && reg.panel.spec.actions.setEmotion)
     // 视图里的每个 data 绑定都能在 data 对象里找到；动作 id 都有 handler。
     const bindings = []
     const actions = []
     const walk = (node) => {
       if (!node || typeof node !== 'object') return
       if (typeof node.$ === 'string' && node.$.startsWith('data.')) bindings.push(node.$.slice(5))
-      if (typeof node.action === 'string') actions.push(node.action)
+      const action = node.action
+      if (typeof action === 'string') actions.push(action)
+      else if (action && typeof action.id === 'string') actions.push(action.id)
       for (const v of Object.values(node)) {
         if (Array.isArray(v)) v.forEach(walk)
         else if (v && typeof v === 'object') walk(v)
@@ -242,22 +243,33 @@ console.log('== 5. 原生入口 / 状态条 / 面板 ==')
     reg.capability({}, { instance: 'read', event: 'audio.ended' })
     assert.deepEqual(reg.panel.spec.actions.stop(), [{ type: 'refresh', id: 'voice-panel' }])
   })
-  check('情感按钮三段循环：关 → 规则 → 智能 → 关', () => {
+  check('情感/通道按钮改成明确选项，不再循环', () => {
     assert.deepEqual(nextEmotionMode(false, false), { autoEmotion: true, smartEmotion: false })
     assert.deepEqual(nextEmotionMode(true, false), { autoEmotion: true, smartEmotion: true })
     assert.deepEqual(nextEmotionMode(true, true), { autoEmotion: false, smartEmotion: false })
-  })
-  check('通道按钮：云端/本地互切，未配置只能本地', () => {
     assert.equal(nextTtsProvider('local', true), 'breeze')
     assert.equal(nextTtsProvider('breeze', true), 'local')
     assert.equal(nextTtsProvider('local', false), 'local')
+    assert.deepEqual(reg.panel.spec.actions.setProvider({}, { value: { v: 'local' } }), [{ type: 'refresh', id: 'voice-panel' }])
+    assert.deepEqual(reg.panel.spec.actions.setEmotion({}, { value: { v: 'rule' } }), [{ type: 'refresh', id: 'voice-panel' }])
+    assert.deepEqual(calls.provider, ['local'])
+    assert.deepEqual(calls.emotion, ['rule'])
   })
-  check('面板通道动作只刷新', () => {
-    assert.deepEqual(reg.panel.spec.actions.provider(), [{ type: 'refresh', id: 'voice-panel' }])
-  })
-  check('面板情感动作只刷新，不弹 toast', () => {
-    const out = reg.panel.spec.actions.emotion()
-    assert.deepEqual(out, [{ type: 'refresh', id: 'voice-panel' }])
+  check('念最新：记住回合结束的最新回复并可朗读', () => {
+    assert.deepEqual(reg.panel.spec.actions.readLatest({ sessionId: 's1' }), {
+      type: 'toast',
+      text: '这个会话还没有可朗读的回复',
+    })
+    reg.sessionEvent({ id: 's1', header: {} }, {
+      type: 'assistant/message',
+      data: { turn: 7, message: { content: [{ type: 'text', text: '最新一条回复。' }] } },
+    })
+    reg.sessionEvent({ id: 's1', header: {} }, { type: 'turn/end', data: { turn: 7, reason: { kind: 'completed' } } })
+    const out = reg.panel.spec.actions.readLatest({ sessionId: 's1' })
+    assert.ok(Array.isArray(out) && out.some((e) => e.type === 'audio' && e.op === 'play'))
+    const data = []
+    reg.panel.spec.data({ sessionId: 's1' }, (d) => data.push(d))
+    assert.equal(data[0].latestLabel, '可朗读')
   })
   try {
     const effects = reg.panel.spec.actions.test()
