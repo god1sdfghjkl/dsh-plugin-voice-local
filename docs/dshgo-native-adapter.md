@@ -157,7 +157,7 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
   都会记录主模型的 `provider/model`；智能情感因此能在原生「朗读」里沿用同一个主模型。
 - 规则模式（`breezeSmartEmotion=false`）零额外 LLM；智能模式失败/超时回退规则，不阻断朗读。
 
-## 原生固定入口（0.9.13–0.9.18，A 方案）
+## 原生固定入口（0.9.13–0.9.19，A 方案）
 
 不做网页岛、不做可拖动，全部走 dsh-go 原生插槽：
 
@@ -166,18 +166,19 @@ dsh-go 的 media 路由要求“一次完整音频、≤16 MiB、30 秒内产出
 - **输入框上方状态条**：`composer.strip` 的 `voice-strip`。参考社区朗读插件
   `鲸鲸朗读` 的做法，**空闲时收起**（`text: ''`），只在「正在合成…」「正在朗读…」
   「语音未就绪」时出现，每秒刷新；入口仍保留在胶囊里。
-- **原生「语音通话」面板**：`panels` 的 `voice-panel`，`presentation: "sheet"`：
+- **原生「语音通话」面板**：`panels` 的 `voice-panel`，`presentation: "sheet"`，
+  `placement` 含 `plugin`（新 App 的插件详情页也会出现入口）：
   - 顶部一句状态：「语音已就绪 · 本地 / 云端」或「语音未就绪」；
   - 主操作 **念最新 / 试听 / 停止**；「念最新」读本会话最近一条完整回复，
     不用再长按消息；
-  - **朗读**：本地 / 云端用带勾选的列表，当前项显示「✓ 正在用」；
-    云端项还会显示「已配置，可切换」或「未配置，先去设置」；
-  - **自动情感**：关 / 规则 / 智能同样用带勾选的列表；本地 TTS 时整段隐藏，
-    切到云端才出现；
+  - **朗读**：本地 / 云端用原生单选组 `options`，选中态由 `data.provider` 绑定；
+    云端项说明会显示「已配置，可切换」或「未配置，先去设置」；
+  - **自动情感**：关 / 规则 / 智能同样用 `options`，选中态由 `data.emotion` 绑定；
+    本地 TTS 时整段隐藏，切到云端才出现；
   - 底部只保留「音色 / 最近回复」两行和一句输入说明，不再堆技术状态行。
 - **语音输入仍用 dsh-go 自带麦克风**：插件不申请原生录音权限，也不假装能替用户按系统麦克风。
-- 面板视图只用 v1 组件（`stack / callout / text / list / keyValue / actions`），
-  老 App 也能画；1738 B、主操作 3 个 + 两个列表，远低于 32 KiB / 120 组件上限。
+- 面板视图只用 v1 组件（`stack / callout / text / options / keyValue / actions`），
+  老 App 也能画；1299 B、主操作 3 个 + 两组单选，远低于 32 KiB / 120 组件上限。
 - **边界**：原生协议没有插件可拖拽、可缩到屏幕角落的悬浮窗；`sheet` 是原生里最接近
   「展开/收起小窗」的形态。真正任意位置悬浮只能走 `shell.overlay` 网页岛（WebView，
   且原生麦克风仍归 App）或修改 dsh-go App。
@@ -255,7 +256,7 @@ ctx.dshGo.panel('voice-panel', {
 
 `client.js`、引擎、路由、模型格式都不动。
 
-## 实现状态（0.9.18）
+## 实现状态（0.9.19）
 
 已落地：`package.json` 的 `dshGo`（`composer.actions` / `composer.strip` / `panels` /
 `message.actions` / `media`）、`lib/dshgo.js`、`lib/index.js` 的
@@ -263,7 +264,7 @@ ctx.dshGo.panel('voice-panel', {
 调用，以及 `test/dshgo-smoke.mjs`（23/0）。
 
 - 长按「朗读」/ 面板「念最新」：多块 WAV 由 `concatWav()` 拼接；
-- 原生入口：胶囊 + 按需出现状态条 + 原生面板（念最新/试听/停止，本地/云端勾选，
-  关/规则/智能勾选；sheet 弹层）；
-- 清单通过 dsh-go 官方 `manifest` schema，面板视图通过 `view` schema（1738 B）；
+- 原生入口：胶囊 + 按需出现状态条 + 原生面板（念最新/试听/停止，本地/云端单选，
+  关/规则/智能单选；sheet 弹层，含插件详情页入口）；
+- 清单通过 dsh-go 官方 `manifest` schema，面板视图通过 `view` schema（1299 B）；
 - 真机 dsh-go 的安装包发布后即可验证。
